@@ -173,6 +173,13 @@ class RecipeConnection:
     edges: list[RecipeEdge]
     total_count: int
     rule_pack: str
+    _excluded: strawberry.Private[list]
+    _profile: strawberry.Private[Profile]
+
+    @strawberry.field(description="Larder addition: recipes the rule pack removed for this profile that match "
+                                  "every other filter, each with `larder.excludedBy`. Not paged.")
+    def excluded(self) -> list[Recipe]:
+        return [to_node(e, self._profile) for e in self._excluded]
 
 
 def to_node(e: lib.Entry, profile: Profile) -> Recipe:
@@ -234,17 +241,18 @@ class Query:
                 if rg is not None:
                     ranges[name] = lib.Range(rg.gte, rg.lte)
 
-        hits, pack = lib.search(
+        res = lib.search(
             prof, should=clauses(filter and filter.should), must=clauses(filter and filter.must),
             ranges=ranges, tags=tags, has_image=has_image, has_instructions=has_instructions,
             is_premium=is_premium)
+        hits = res.hits
         page = hits[start:start + first]
-        edges = [RecipeEdge(cursor=lib.cursor(start + i), node=to_node(e, prof)) for i, (e, _) in enumerate(page)]
+        edges = [RecipeEdge(cursor=lib.cursor(start + i), node=to_node(e, prof)) for i, e in enumerate(page)]
         return RecipeConnection(
             page_info=PageInfo(has_next_page=start + first < len(hits), has_previous_page=start > 0,
                                start_cursor=edges[0].cursor if edges else None,
                                end_cursor=edges[-1].cursor if edges else None),
-            edges=edges, total_count=len(hits), rule_pack=pack,
+            edges=edges, total_count=len(hits), rule_pack=res.rule_pack, _excluded=res.excluded, _profile=prof,
         )
 
     @strawberry.field(description="One recipe by ID. With a profile, `larder.allowed` says whether it suits it.")

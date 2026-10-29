@@ -1,4 +1,4 @@
-"""FastAPI app serving the GraphQL API.
+"""FastAPI app serving the GraphQL API, judged cases and the test bench page (/testbench).
 
     LARDER_API_KEYS=key1,key2 uvicorn api.app:app --reload
 
@@ -9,12 +9,17 @@ from __future__ import annotations
 
 import hmac
 import os
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from strawberry.fastapi import GraphQLRouter
 
+from api.cases import router as cases_router
 from api.library import library, rule_pack
 from api.schema import schema
+
+STATIC = Path(__file__).resolve().parent / "static"
 
 
 def _keys() -> list[str]:
@@ -32,9 +37,18 @@ def require_key(request: Request) -> None:
 
 
 app = FastAPI(title="Larder", version="0.1.0")
-app.include_router(GraphQLRouter(schema), prefix="/graphql", dependencies=[Depends(require_key)])
+app.include_router(GraphQLRouter(schema, graphql_ide=None), prefix="/graphql", dependencies=[Depends(require_key)])
+app.include_router(cases_router, dependencies=[Depends(require_key)])
+
+
+@app.get("/testbench", include_in_schema=False)
+def testbench() -> FileResponse:
+    """The test bench page. It holds no data; every call it makes sends the API key."""
+    return FileResponse(STATIC / "testbench.html")
 
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "rule_pack": rule_pack(), "recipes": len(library())}
+    recipes = [e.recipe for e in library().values()]
+    return {"status": "ok", "rule_pack": rule_pack(), "recipes": len(recipes),
+            "fixtures": sum(r.fixture for r in recipes), "with_images": sum(bool(r.image) for r in recipes)}

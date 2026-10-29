@@ -8,7 +8,8 @@ code runs on generated recipes.
 
 ```
 pip install -e .
-python -m pytest -q                   # 46 tests, incl. the client's queries against the API
+python -m pytest -q                   # 50 tests, incl. the client's queries against the API
+python -m evals.judged_cases --show   # re-check every verdict saved from the test bench
 python -m evals.matrix_check          # pregnancy + diet outcome per recipe vs the matrix (30/30)
 python -m evals.run_golden            # 25 golden profiles (25/25)
 python -m evals.fault_injection       # 11/11 rules faults caught; 3 critic faults pending a model
@@ -37,6 +38,29 @@ Send the key as `Authorization: Token <key>`. With no keys configured, every req
 - Every search result passes the rule pack for the profile, or for a general adult if none is sent. Recipes
   that fail the structural checks are never served. An upper bound in `macroNutrientsRange` excludes recipes
   whose value for that nutrient is incomplete, because missing data can only make it higher.
+
+## Test bench
+
+A page for testing the API by hand and recording verdicts, at `/testbench` on the running server:
+
+```
+LARDER_API_KEYS=pick-a-key uvicorn api.app:app      # then open http://localhost:8000/testbench
+```
+
+Enter the API key and your name at the top. Then:
+
+- **Profile search**: pick a life stage, diet, allergens, focus, meal and the client's filters, and run it.
+  The page builds the GraphQL for you; "Edit as GraphQL" or "Show the query" shows it.
+- **GraphQL**: write any query, or start from the client's four real queries and a few Larder examples.
+- **Judge** every recipe: returned ones are "Should be here" / "Shouldn't be here" / "Unsure"; excluded ones,
+  with the rule that removed them, are "Rightly excluded" / "Should be allowed" / "Unsure". Add a note to any.
+  "Expected but missing" records a recipe the query should have returned.
+- **Save** the case. It's written to `review/cases/<id>.json`; commit it. "Open" reloads a case, re-runs it
+  and marks each verdict: still holds, regression, still wrong, or now fixed. "Check all" does every case.
+
+`python -m evals.judged_cases --show` runs the same check from the command line and fails on any regression,
+so a reviewer's verdicts become tests. The excluded list comes from a Larder addition to the API:
+`recipeSearch { excluded { ... } }`.
 
 Guesses to confirm against the client's integration: `mealTags` come back lower case; sodium is in mg;
 `instructions` is a list of strings; several `ingredients` terms in one clause must all match;
@@ -72,7 +96,8 @@ Dry run of the whole recipe pipeline without keys: `--models fixture`.
 | `evals/` | Matrix check, golden profiles, fault injection, routing cases (150) + scorer |
 | `prompts/` | Recipe templates A and B, critic, parser |
 | `generation/` | LiteLLM model layer and the round runner (logs every call, cost and template version) |
-| `api/` | GraphQL service: `schema.py` (types, client-compatible), `library.py` (filters over engine.search), `app.py` (FastAPI, key stub) |
+| `api/` | GraphQL service: `schema.py` (types, client-compatible), `library.py` (filters over engine.search), `cases.py` (judged cases), `app.py` (FastAPI, key stub), `static/testbench.html` |
+| `review/cases/` | Judged cases saved from the test bench; re-checked by `evals/judged_cases.py` |
 
 ## Known limits (to fix before trusting the numbers)
 

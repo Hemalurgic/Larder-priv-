@@ -89,6 +89,7 @@ def client(tmp_path, monkeypatch):
     path.write_text("\n".join(json.dumps(r) for r in rows))
     monkeypatch.setenv("LARDER_LIBRARY", str(path))
     monkeypatch.setenv("LARDER_API_KEYS", KEY)
+    monkeypatch.setenv("LARDER_CASES", str(tmp_path / "cases"))
     lib.library.cache_clear()
     yield TestClient(app)
     lib.library.cache_clear()
@@ -226,3 +227,97 @@ def test_auth(client, monkeypatch):
     monkeypatch.setenv("LARDER_API_KEYS", "")
     assert client.post("/graphql", json=q, headers={"Authorization": f"Token {KEY}"}).status_code == 401
     assert client.get("/health").json()["recipes"] == 30
+
+
+# ---------- excluded list, judged cases, test bench ----------
+
+PREG_Q = """
+query($p: ProfileInput, $f: SearchFilter) {
+recipeSearch(profile: $p, filter: $f, first: 100) {
+edges { node { id name } }
+excluded { id name larder { allowed excludedBy } }
+}
+}
+"""
+
+
+def pate_recipe():
+    return next(e.recipe for e in lib.library().values()
+                if any(i.food == "chicken_liver_pate" for i in e.recipe.ingredients))
+
+
+def test_excluded_lists_rule_removals_that_match_other_filters(client):
+    out = gql(client, PREG_Q, {"p": {"lifeStage": "PREGNANT"}})["data"]["recipeSearch"]
+    excluded = {lib.local_id(x["id"]): x for x in out["excluded"]}
+    pate = pate_recipe()
+    assert pate.id in excluded and pate.id not in ids(out)
+    assert excluded[pate.id]["larder"]["allowed"] is False
+    assert any(r.startswith("preg-no-pate") for r in excluded[pate.id]["larder"]["excludedBy"])
+    for rid in excluded:
+        assert not evaluate(lib.library()[rid].recipe, Profile(life_stage="pregnant")).allowed
+    # a keyword that doesn't match the pate recipe keeps it out of the excluded list too
+    out = gql(client, PREG_Q, {"p": {"lifeStage": "PREGNANT"}, "f": {"should": [{"name": "zzz-no-match"}]}})
+    assert out["data"]["recipeSearch"]["excluded"] == []
+
+
+def case_body(judgements):
+    return {"name": "Pregnant search", "reviewer": "Test", "query": PREG_Q,
+            "variables": {"p": {"lifeStage": "PREGNANT"}}, "judgements": judgements}
+
+
+def call(client, method, path, body=None):
+    return client.request(method, path, json=body, headers={"Authorization": f"Token {KEY}"})
+
+
+def test_cases_save_list_check_delete(client):
+    out = gql(client, PREG_Q, {"p": {"lifeStage": "PREGNANT"}})["data"]["recipeSearch"]
+    kept = ids(out)[0]
+    pate = pate_recipe().id
+    other_excluded = next(lib.local_id(x["id"]) for x in out["excluded"] if lib.local_id(x["id"]) != pate)
+    judgements = [
+        {"recipe_id": kept, "outcome": "returned", "verdict": "right"},          # holds
+        {"recipe_id": pate, "outcome": "excluded", "verdict": "right"},          # holds
+        {"recipe_id": ids(out)[1], "outcome": "returned", "verdict": "wrong"},   # open
+        {"recipe_id": other_excluded, "outcome": "excluded", "verdict": "unsure"},
+        {"recipe_id": pate, "outcome": "missing", "verdict": "wrong", "note": "test"},  # open
+    ]
+    r = call(client, "PUT", "/cases/preg-1", case_body(judgements))
+    assert r.status_code == 200 and r.json()["rule_pack"] == "GB@0.1" and r.json()["created"]
+    assert [c["id"] for c in call(client, "GET", "/cases").json()] == ["preg-1"]
+    rep = call(client, "POST", "/cases/preg-1/check").json()
+    assert rep["counts"] == {"holds": 2, "regression": 0, "open": 2, "fixed": 0, "unsure": 1}
+
+    # a verdict that no longer matches what the engine does is a regression
+    judgements[1] = {"recipe_id": pate, "outcome": "returned", "verdict": "right"}
+    call(client, "PUT", "/cases/preg-1", case_body(judgements))
+    assert call(client, "POST", "/cases/preg-1/check").json()["counts"]["regression"] == 1
+    from evals.judged_cases import run as run_cases
+    assert run_cases() == 1
+
+    assert call(client, "PUT", "/cases/Bad Id", case_body([])).status_code == 400
+    assert call(client, "GET", "/cases/nope").status_code == 404
+    assert call(client, "DELETE", "/cases/preg-1").status_code == 200
+    assert call(client, "GET", "/cases").json() == []
+    assert client.get("/cases").status_code == 401
+
+
+def test_status_rules():
+    from api.cases import Judgement, status
+    J = lambda o, v: Judgement(recipe_id="x", outcome=o, verdict=v)
+    assert status(J("returned", "right"), "returned") == "holds"
+    assert status(J("returned", "right"), "absent") == "regression"
+    assert status(J("excluded", "right"), "excluded") == "holds"
+    assert status(J("excluded", "right"), "returned") == "regression"
+    assert status(J("returned", "wrong"), "returned") == "open"
+    assert status(J("returned", "wrong"), "excluded") == "fixed"
+    assert status(J("excluded", "wrong"), "returned") == "fixed"
+    assert status(J("missing", "wrong"), "absent") == "open"
+    assert status(J("missing", "wrong"), "returned") == "fixed"
+    assert status(J("returned", "unsure"), "absent") == "unsure"
+
+
+def test_testbench_page_and_health(client):
+    r = client.get("/testbench")
+    assert r.status_code == 200 and "<title>Larder Test Bench</title>" in r.text
+    h = client.get("/health").json()
+    assert h["fixtures"] == 30 and h["with_images"] == 29

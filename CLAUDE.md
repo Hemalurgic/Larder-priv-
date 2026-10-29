@@ -29,7 +29,8 @@ python -m evals.run_golden                  # 25/25, blocks publishing on any fa
 python -m evals.fault_injection             # 11/11 rules faults caught
 python -m evals.score_parser --parser keyword --show-failures
 python -m generation.run_round --round 0 --half all --models fixture   # dry run, no keys
-LARDER_API_KEYS=dev uvicorn api.app:app --reload                         # GraphQL API on /graphql
+python -m evals.judged_cases --show                                      # re-check saved verdicts
+LARDER_API_KEYS=dev uvicorn api.app:app --reload                         # /graphql and /testbench
 ```
 
 Model runs go through OpenRouter (`OPENROUTER_API_KEY`, LiteLLM prefix `openrouter/`).
@@ -39,7 +40,9 @@ Proposed models and costs: `config/test_models.yaml`. Confirm IDs on openrouter.
 
 See README.md. Key files: `schema/models.py` (contracts), `engine/rules.py` (rules engine),
 `engine/nutrition.py` (CoFID 2021 maths), `evals/` (all tests), `prompts/` (templates; version = file hash),
-`api/` (GraphQL service). `tests/test_api.py` holds the client's real Suggestic queries verbatim: keep them passing.
+`api/` (GraphQL service, test bench at `/testbench`). `tests/test_api.py` holds the client's real Suggestic queries
+verbatim: keep them passing. `review/cases/` holds reviewers' judged cases: a regression there needs the same
+dietitian sign-off as the rule change that caused it.
 
 ## Current state (29 Oct 2026)
 
@@ -47,6 +50,8 @@ See README.md. Key files: `schema/models.py` (contracts), `engine/rules.py` (rul
 - GraphQL API answers the client's four Suggestic queries in the same shape (search by keyword + calorie cap,
   browse by meal, one recipe, page through vegan IDs). None of their queries send a profile today; the
   `profile` argument and `larder` block are what Larder adds.
+- Test bench (`/testbench`): profile search or raw GraphQL, verdicts on every returned and excluded recipe,
+  saved as cases in `review/cases/` and re-checked by `evals.judged_cases`.
 - Free text is not a requirement: the client sends structured filters only. Routing test and parser are parked.
 - Not yet run: any model call. Recipe round 1, critic, LLM routing test all need an OpenRouter key.
 - Known limits: README "Known limits" section (raw-weight nutrition, 5 CoFID gaps, 33 proxies,

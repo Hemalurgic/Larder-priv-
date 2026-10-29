@@ -124,36 +124,42 @@ def stricter(a: Diet, b: Diet | None) -> Diet:
     return b if b is not None and DIET_STRICTNESS[b] > DIET_STRICTNESS[a] else a
 
 
+@dataclass
+class SearchResult:
+    hits: list[Entry]           # allowed, in rank order
+    excluded: list[Entry]       # removed by the rule pack, and matching every other filter
+    rule_pack: str
+
+
 def search(profile: Profile, *, should: list[TextClause] = (), must: list[TextClause] = (),
            ranges: dict[str, Range] | None = None, tags: list[str] | None = None,
            has_image: bool | None = None, has_instructions: bool | None = None,
-           is_premium: bool | None = None) -> tuple[list[tuple[Entry, dict]], str]:
-    """Returns (entry, engine result) pairs in rank order, and the rule pack version."""
+           is_premium: bool | None = None) -> SearchResult:
     lib = library()
     if is_premium:              # Larder has no premium tier
-        return [], rule_pack()
+        return SearchResult([], [], rule_pack())
     res = engine_search(list(e.recipe for e in lib.values()), profile, limit=len(lib), with_nutrition=False)
     meal_tags = {t.lower() for t in tags} if tags else None
-    out = []
-    for hit in res["results"]:
-        e = lib[hit["id"]]
+
+    def keep(e: Entry) -> bool:
         r = e.recipe
         if should and not any(c.matches(r) for c in should):
-            continue
+            return False
         if not all(c.matches(r) for c in must):
-            continue
+            return False
         if meal_tags is not None and r.meal.value not in meal_tags:
-            continue
+            return False
         if has_image is not None and bool(r.image) != has_image:
-            continue
+            return False
         if has_instructions is not None and bool(r.steps) != has_instructions:
-            continue
-        if ranges and not _in_ranges(e, ranges):
-            continue
-        out.append((e, hit))
+            return False
+        return not ranges or _in_ranges(e, ranges)
+
+    hits = [e for e in (lib[h["id"]] for h in res["results"]) if keep(e)]
+    excluded = [e for e in (lib[x["id"]] for x in res["excluded"]) if keep(e)]
     if profile.focus:  # engine_search ran without nutrition, so rank here from the cached values
-        out.sort(key=lambda p: -_focus_score(p[0], profile))
-    return out, rule_pack()
+        hits.sort(key=lambda e: -_focus_score(e, profile))
+    return SearchResult(hits, excluded, rule_pack())
 
 
 def _in_ranges(e: Entry, ranges: dict[str, Range]) -> bool:

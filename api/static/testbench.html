@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Larder Test Bench</title>
+<style>
+/* Layout: query and saved cases on the left, results to judge on the right; one column on narrow screens. */
+:root {
+  --bg: #F3F5F1; --panel: #FFFFFF; --fg: #1D2420; --muted: #5C685F; --line: #D3D9D0; --soft: #EBEFE8;
+  --accent: #2F6B4F; --accent-fg: #FFFFFF;
+  --good: #23704A; --good-soft: #E2F1E8; --bad: #A8372A; --bad-soft: #F8E6E2; --warn: #8A5A0B; --warn-soft: #FBF0DA;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #121614; --panel: #1A201C; --fg: #E2E8E3; --muted: #9AA79E; --line: #343E37; --soft: #222A25;
+  --accent: #6FBF95; --accent-fg: #0F1A14;
+  --good: #7FD0A2; --good-soft: #1C3226; --bad: #F09384; --bad-soft: #3A211D; --warn: #E9B95C; --warn-soft: #352A15;
+  color-scheme: dark } }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--sans); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 12px 20px;
+  background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+header h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
+  border: 1px solid var(--line); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.chip.mono { font-family: var(--mono); }
+.chip.good { color: var(--good); border-color: var(--good); background: var(--good-soft); }
+.chip.bad { color: var(--bad); border-color: var(--bad); background: var(--bad-soft); }
+.chip.warn { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
+.who { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; }
+.who label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.who input { width: 150px; }
+
+input[type=text], input[type=password], input[type=number], select, textarea {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; min-width: 0; }
+textarea { width: 100%; font-family: var(--mono); font-size: 12.5px; line-height: 1.45; resize: vertical; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+.btn:hover { background: var(--soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.btn.small { padding: 2px 8px; font-size: 12px; }
+.btn.danger { color: var(--bad); }
+
+main { display: grid; grid-template-columns: minmax(320px, 420px) minmax(0, 1fr); gap: 20px; padding: 20px; align-items: start; }
+@media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); padding: 16px; } .who { margin-left: 0; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.col { display: grid; gap: 20px; min-width: 0; }
+h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+h3 { margin: 0; font-size: 15px; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; background: none; padding: 6px 10px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button[aria-selected=true] { color: var(--fg); border-bottom-color: var(--accent); font-weight: 600; }
+
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.form label, .field { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.form .wide { grid-column: 1 / -1; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 10px; margin: 0; }
+legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 2px 10px; }
+.checks label { display: flex; gap: 6px; align-items: center; color: var(--fg); font-size: 13px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+
+.banner { padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+.banner.warn { background: var(--warn-soft); color: var(--warn); }
+.banner.bad { background: var(--bad-soft); color: var(--bad); }
+
+.summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.summary strong { font-size: 15px; }
+details > summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+pre { margin: 8px 0 0; padding: 10px; background: var(--soft); border-radius: 6px; overflow-x: auto; font: 12px/1.45 var(--mono); max-height: 420px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; background: var(--panel); min-width: 0; }
+.card.excluded { border-left: 4px solid var(--bad); }
+.card.returned { border-left: 4px solid var(--good); }
+.card.missing { border-left: 4px solid var(--warn); }
+.card .top { display: flex; gap: 10px; align-items: start; justify-content: space-between; }
+.card img { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; flex: none; }
+.meta { font-size: 12px; color: var(--muted); }
+.nut { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.nut div { background: var(--soft); border-radius: 6px; padding: 3px 6px; font-size: 11px; color: var(--muted); }
+.nut b { display: block; color: var(--fg); font-size: 13px; font-variant-numeric: tabular-nums; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tags .chip { white-space: normal; }
+.reasons { margin: 0; padding-left: 18px; font-size: 13px; }
+.reasons.bad { color: var(--bad); }
+.verdict { display: grid; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer; }
+.seg button[aria-pressed=true][data-v=right] { background: var(--good-soft); border-color: var(--good); color: var(--good); font-weight: 600; }
+.seg button[aria-pressed=true][data-v=wrong] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); font-weight: 600; }
+.seg button[aria-pressed=true][data-v=unsure] { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 600; }
+.verdict input { width: 100%; }
+
+.cases { display: grid; gap: 6px; }
+.case { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.case.loaded { border-color: var(--accent); }
+.case .name { font-weight: 600; overflow-wrap: anywhere; }
+.empty { color: var(--muted); font-size: 13px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Larder test bench</h1>
+  <span class="chip mono" id="pack">rule pack …</span>
+  <span class="chip" id="libinfo">library …</span>
+  <div class="who">
+    <label for="apikey">API key <input id="apikey" type="password" autocomplete="off"></label>
+    <label for="reviewer">Reviewer <input id="reviewer" type="text" placeholder="Your name"></label>
+  </div>
+</header>
+
+<main>
+  <div class="col">
+    <section class="panel" aria-labelledby="q-h">
+      <h2 id="q-h">Query</h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-form" aria-selected="true" aria-controls="pane-form">Profile search</button>
+        <button role="tab" id="tab-gql" aria-selected="false" aria-controls="pane-gql">GraphQL</button>
+      </div>
+
+      <div id="pane-form" role="tabpanel" aria-labelledby="tab-form">
+        <form class="form" id="form">
+          <label>Life stage<select id="f-life"><option value="GENERAL">General adult</option><option value="PREGNANT">Pregnant</option></select></label>
+          <label>Cycle phase<select id="f-cycle"><option value="">Not given</option><option value="MENSTRUAL">Menstrual</option><option value="FOLLICULAR">Follicular</option><option value="OVULATORY">Ovulatory</option><option value="LUTEAL">Luteal</option></select></label>
+          <label>Diet<select id="f-diet"><option value="OMNIVORE">Omnivore</option><option value="VEGETARIAN">Vegetarian</option><option value="VEGAN">Vegan</option></select></label>
+          <label>Meal<select id="f-meal"><option value="">Any</option><option value="BREAKFAST">Breakfast</option><option value="LUNCH">Lunch</option><option value="DINNER">Dinner</option><option value="SNACK">Snack</option></select></label>
+          <fieldset class="wide"><legend>Nutrient focus (ranks results)</legend><div class="checks" id="f-focus"></div></fieldset>
+          <fieldset class="wide"><legend>Exclude allergens</legend><div class="checks" id="f-allergens"></div></fieldset>
+          <label>Max minutes<input id="f-minutes" type="number" min="5" max="240" placeholder="Any"></label>
+          <label>Keyword (name or ingredient)<input id="f-keyword" type="text" placeholder="e.g. salmon"></label>
+          <label>Calories min (per serving)<input id="f-kmin" type="number" min="0" placeholder="Any"></label>
+          <label>Calories max (per serving)<input id="f-kmax" type="number" min="0" placeholder="Any"></label>
+          <label>Has image<select id="f-image"><option value="">Either</option><option value="true">Yes</option><option value="false">No</option></select></label>
+          <label>Has instructions<select id="f-steps"><option value="">Either</option><option value="true">Yes</option><option value="false">No</option></select></label>
+          <div class="row wide">
+            <button class="btn primary" type="submit">Run search</button>
+            <button class="btn" type="button" id="to-gql">Edit as GraphQL</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="pane-gql" role="tabpanel" aria-labelledby="tab-gql" hidden>
+        <div style="display:grid;gap:10px">
+          <label class="field" for="examples">Start from an example
+            <select id="examples"></select>
+          </label>
+          <label class="field" for="gql">Query
+            <textarea id="gql" rows="16" spellcheck="false"></textarea>
+          </label>
+          <label class="field" for="vars">Variables (JSON)
+            <textarea id="vars" rows="4" spellcheck="false">{}</textarea>
+          </label>
+          <div class="row">
+            <button class="btn primary" id="run-gql" type="button">Run query</button>
+            <span class="hint">Ctrl or ⌘ + Enter runs it.</span>
+          </div>
+          <p class="hint">Recipes are picked up wherever they appear in the response. Ask for <code>larder { allowed excludedBy rulesApplied }</code> and <code>excluded { … }</code> to see the reasons.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="c-h">
+      <div class="row" style="justify-content:space-between">
+        <h2 id="c-h">Saved cases</h2>
+        <div class="row">
+          <button class="btn small" id="new-case" type="button">New case</button>
+          <button class="btn small" id="check-all" type="button">Check all</button>
+        </div>
+      </div>
+      <div id="check-all-out" class="hint" hidden></div>
+      <div class="cases" id="cases"><div class="empty">No saved cases yet. Run a query, judge the results, then save it as a case.</div></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="panel" aria-labelledby="r-h">
+      <div class="row" style="justify-content:space-between">
+        <h2 id="r-h">Results</h2>
+        <span class="chip" id="loaded-case" hidden></span>
+      </div>
+      <div id="banner" class="banner bad" hidden></div>
+      <div id="results"><div class="empty">Run a search or a GraphQL query to see results here. Every recipe can be marked right, wrong or unsure, with a note.</div></div>
+    </section>
+
+    <section class="panel" aria-labelledby="s-h" id="save-panel" hidden>
+      <h2 id="s-h">Save this case</h2>
+      <div class="form">
+        <label class="wide">Case name<input id="case-name" type="text" placeholder="e.g. Pregnant, no fish, dinner"></label>
+        <label class="wide">Overall note<textarea id="case-note" rows="3" style="font-family:var(--sans);font-size:14px" placeholder="What you were testing and what you found"></textarea></label>
+        <div class="row wide">
+          <button class="btn primary" id="save" type="button">Save case</button>
+          <span class="hint" id="save-out"></span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+const FOCUS = ["IRON", "MAGNESIUM", "PROTEIN", "FOLATE"];
+const ALLERGENS = ["CELERY", "CEREALS_GLUTEN", "CRUSTACEANS", "EGGS", "FISH", "LUPIN", "MILK", "MOLLUSCS",
+  "MUSTARD", "TREE_NUTS", "PEANUTS", "SESAME", "SOYA", "SULPHITES"];
+const LABELS = {
+  returned: { right: "Should be here", wrong: "Shouldn't be here", unsure: "Unsure" },
+  excluded: { right: "Rightly excluded", wrong: "Should be allowed", unsure: "Unsure" },
+};
+const UK = { fiber: "fibre", sugar: "sugars", carbs: "carbohydrate", calories: "energy" };
+const STATUS = { holds: ["good", "Still holds"], regression: ["bad", "Regression"], open: ["warn", "Still wrong"],
+  fixed: ["good", "Now fixed"], unsure: ["", "Unsure"] };
+
+const FRAGMENT = `fragment R on Recipe {
+  id name mainImage totalTimeInSeconds numberOfServings mealTags ingredientLines instructions
+  nutrientsPerServing { calories protein carbs fat fiber sugar sodium }
+  larder { allowed excludedBy rulesApplied notes allergens dietaryTags claims nutritionBasis incompleteNutrients fixture }
+}`;
+
+const EXAMPLES = [
+  { name: "Client 1: salmon under 600 kcal", vars: {}, query: `query RecipeSearch {
+  recipeSearch(
+    filter: { should: [{ name: "salmon" }, { ingredients: ["salmon"] }] }
+    macroNutrientsRange: { calories: { gte: 0, lte: 600 } }
+    hasImage: true
+    hasInstructions: true
+    isPremium: false
+    first: 10
+  ) {
+    pageInfo { hasNextPage endCursor }
+    edges {
+      node {
+        id name mainImage totalTimeInSeconds mealTags ingredientLines
+        parsedIngredientLines { ingredient quantity unit comment }
+        nutrientsPerServing { calories protein carbs fat fiber sugar sodium }
+      }
+    }
+  }
+}` },
+  { name: "Client 2: browse breakfast", vars: {}, query: `query {
+  recipeSearch(tags: ["breakfast", "Breakfast"], hasImage: true,
+    hasInstructions: true, isPremium: false, first: 50) {
+    pageInfo { hasNextPage endCursor }
+    edges {
+      node {
+        id name mainImage totalTimeInSeconds mealTags ingredientLines
+        parsedIngredientLines { ingredient quantity unit comment }
+        nutrientsPerServing { calories protein carbs fat fiber sugar sodium }
+      }
+    }
+  }
+}` },
+  { name: "Client 3: one recipe in full", vars: {}, query: `query Recipe {
+  recipe(id: "UmVjaXBlOjEyMw==") {
+    id name mainImage totalTimeInSeconds numberOfServings
+    instructions ingredientLines
+    parsedIngredientLines { ingredient quantity unit comment }
+    nutrientsPerServing { calories protein carbs fat }
+  }
+}` },
+  { name: "Client 4: vegan IDs, one page", vars: { after: null }, query: `query Vegan($after: String) {
+  recipeSearch(dietaryTag: VEGAN, hasImage: true, hasInstructions: true,
+    isPremium: false, first: 100, after: $after) {
+    pageInfo { hasNextPage endCursor }
+    edges { node { id } }
+  }
+}` },
+  { name: "Larder: same searches without image filters", vars: {}, query: `query {
+  recipeSearch(filter: { should: [{ name: "salmon" }, { ingredients: ["salmon"] }] }, first: 20) {
+    totalCount rulePack
+    edges { node { ...R } }
+  }
+}
+${FRAGMENT}` },
+  { name: "Larder: pregnant, no fish, with reasons", vars: { p: { lifeStage: "PREGNANT", excludeAllergens: ["FISH"] } }, query: `query($p: ProfileInput) {
+  recipeSearch(profile: $p, first: 50) {
+    totalCount rulePack
+    edges { node { ...R } }
+    excluded { ...R }
+  }
+}
+${FRAGMENT}` },
+  { name: "Larder: one recipe for a pregnant profile", vars: { id: "UmVjaXBlOmZ4MDk=", p: { lifeStage: "PREGNANT" } }, query: `query($id: ID!, $p: ProfileInput) {
+  recipe(id: $id, profile: $p) { ...R }
+}
+${FRAGMENT}` },
+];
+
+// ---------- small helpers ----------
+const $ = (s) => document.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "class") el.className = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false)
+    el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  return el;
+}
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage blocked: fine */ } },
+};
+function localId(gid) {
+  try { const s = atob(gid); return s.startsWith("Recipe:") ? s.slice(7) : null; } catch { return null; }
+}
+const pretty = (s) => s.toLowerCase().replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+const slug = (s) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "case";
+
+// ---------- state ----------
+const state = {
+  last: null,             // { query, variables }
+  items: [],              // [{ id, name, outcome, node }]
+  verdicts: new Map(),    // recipe id -> { verdict, note, outcome, name }
+  missing: [],            // [{ recipe_id, name, note }]
+  caseId: null,
+  statuses: new Map(),    // recipe id -> check result (when a saved case is open)
+  library: null,          // [{ id, name }]
+};
+
+// ---------- API ----------
+async function api(path, opts = {}) {
+  const key = $("#apikey").value.trim();
+  const res = await fetch(path, { ...opts, headers: { "Content-Type": "application/json", "Authorization": `Token ${key}`, ...(opts.headers || {}) } });
+  if (res.status === 401) throw new Error("The API key is missing or wrong. Enter it at the top right.");
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((body && body.detail && (typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail))) || `HTTP ${res.status}`);
+  return body;
+}
+const gql = (query, variables) => api("/graphql", { method: "POST", body: JSON.stringify({ query, variables }) });
+
+function showBanner(msg, kind = "bad") {
+  const b = $("#banner");
+  b.className = `banner ${kind}`; b.textContent = msg; b.hidden = !msg;
+}
+
+// ---------- form ----------
+function buildChecks(box, values, name) {
+  for (const v of values) box.append(h("label", {}, h("input", { type: "checkbox", value: v, name }), pretty(v)));
+}
+buildChecks($("#f-focus"), FOCUS, "focus");
+buildChecks($("#f-allergens"), ALLERGENS, "allergen");
+
+function formQuery() {
+  const checked = (name) => [...document.querySelectorAll(`input[name=${name}]:checked`)].map((i) => i.value);
+  const num = (id) => { const v = $(id).value.trim(); return v === "" ? null : Number(v); };
+  const bool = (id) => ($(id).value === "" ? null : $(id).value === "true");
+  const p = { lifeStage: $("#f-life").value, diet: $("#f-diet").value };
+  if ($("#f-cycle").value) p.cyclePhase = $("#f-cycle").value;
+  if ($("#f-meal").value) p.meal = $("#f-meal").value;
+  if (checked("focus").length) p.focus = checked("focus");
+  if (checked("allergen").length) p.excludeAllergens = checked("allergen");
+  if (num("#f-minutes") !== null) p.maxMinutes = num("#f-minutes");
+  const vars = { p };
+  const args = ["profile: $p", "first: 100"];
+  const decl = ["$p: ProfileInput"];
+  const kw = $("#f-keyword").value.trim();
+  if (kw) { vars.filter = { should: [{ name: kw }, { ingredients: [kw] }] }; decl.push("$filter: SearchFilter"); args.push("filter: $filter"); }
+  const kmin = num("#f-kmin"), kmax = num("#f-kmax");
+  if (kmin !== null || kmax !== null) {
+    vars.range = { calories: { ...(kmin !== null && { gte: kmin }), ...(kmax !== null && { lte: kmax }) } };
+    decl.push("$range: MacroNutrientsRange"); args.push("macroNutrientsRange: $range");
+  }
+  if (bool("#f-image") !== null) { vars.hasImage = bool("#f-image"); decl.push("$hasImage: Boolean"); args.push("hasImage: $hasImage"); }
+  if (bool("#f-steps") !== null) { vars.hasInstructions = bool("#f-steps"); decl.push("$hasInstructions: Boolean"); args.push("hasInstructions: $hasInstructions"); }
+  const query = `query Bench(${decl.join(", ")}) {
+  recipeSearch(${args.join(", ")}) {
+    totalCount rulePack
+    edges { node { ...R } }
+    excluded { ...R }
+  }
+}
+${FRAGMENT}`;
+  return { query, variables: vars };
+}
+
+// ---------- tabs ----------
+function selectTab(which) {
+  for (const t of ["form", "gql"]) {
+    $(`#tab-${t}`).setAttribute("aria-selected", String(t === which));
+    $(`#pane-${t}`).hidden = t !== which;
+  }
+}
+$("#tab-form").addEventListener("click", () => selectTab("form"));
+$("#tab-gql").addEventListener("click", () => selectTab("gql"));
+$("#to-gql").addEventListener("click", () => {
+  const { query, variables } = formQuery();
+  $("#gql").value = query; $("#vars").value = JSON.stringify(variables, null, 2);
+  selectTab("gql");
+});
+
+const ex = $("#examples");
+ex.append(h("option", { value: "" }, "Choose an example…"));
+EXAMPLES.forEach((e, i) => ex.append(h("option", { value: String(i) }, e.name)));
+ex.addEventListener("change", () => {
+  const e = EXAMPLES[Number(ex.value)];
+  if (!e) return;
+  $("#gql").value = e.query; $("#vars").value = JSON.stringify(e.vars, null, 2);
+});
+
+// ---------- running ----------
+async function run(query, variables, { keepJudgements = false } = {}) {
+  showBanner("");
+  if (!keepJudgements) {   // a new query is a new case: never save its verdicts over the case that was open
+    state.verdicts.clear(); state.missing = []; state.statuses.clear();
+    if (state.caseId) { state.caseId = null; $("#loaded-case").hidden = true; $("#case-name").value = ""; $("#case-note").value = ""; $("#save-out").textContent = ""; refreshCases(); }
+  }
+  state.last = { query, variables };
+  const t0 = performance.now();
+  let res;
+  try { res = await gql(query, variables); }
+  catch (err) { showBanner(err.message); return; }
+  const ms = Math.round(performance.now() - t0);
+  state.items = collect(res.data);
+  // a saved verdict on a recipe whose outcome has since changed no longer fits its card; its status chip says what changed
+  for (const item of state.items) {
+    const v = state.verdicts.get(item.id);
+    if (v && v.outcome !== item.outcome) state.verdicts.delete(item.id);
+  }
+  render(res, ms);
+  $("#save-panel").hidden = false;
+  loadLibrary();
+}
+
+function collect(data) {
+  const out = new Map();
+  (function walk(x, underExcluded) {
+    if (Array.isArray(x)) { x.forEach((i) => walk(i, underExcluded)); return; }
+    if (!x || typeof x !== "object") return;
+    const id = typeof x.id === "string" ? localId(x.id) : null;
+    if (id) {
+      const excluded = underExcluded || (x.larder && x.larder.allowed === false);
+      const prev = out.get(id);
+      if (!prev || (prev.outcome === "excluded" && !excluded))
+        out.set(id, { id, name: x.name || (prev && prev.name) || id, outcome: excluded ? "excluded" : "returned", node: { ...(prev && prev.node), ...x } });
+    }
+    for (const [k, v] of Object.entries(x)) walk(v, underExcluded || k === "excluded");
+  })(data, false);
+  return [...out.values()];
+}
+
+$("#form").addEventListener("submit", (e) => { e.preventDefault(); const q = formQuery(); run(q.query, q.variables); });
+function runGql() {
+  let vars;
+  try { vars = JSON.parse($("#vars").value || "{}"); }
+  catch { showBanner("The variables aren't valid JSON."); return; }
+  run($("#gql").value, vars);
+}
+$("#run-gql").addEventListener("click", runGql);
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    if (!$("#pane-gql").hidden) runGql(); else $("#form").requestSubmit();
+  }
+});
+
+// ---------- rendering ----------
+function nutrition(n) {
+  if (!n) return null;
+  const cell = (label, v, unit, dp = 1) => v === undefined ? null : h("div", {}, label, h("b", {}, `${Number(v).toFixed(dp)}${unit}`));
+  return h("div", { class: "nut" },
+    cell("Energy", n.calories, " kcal", 0), cell("Protein", n.protein, " g"), cell("Carbs", n.carbs, " g"), cell("Fat", n.fat, " g"),
+    cell("Fibre", n.fiber, " g"), cell("Sugars", n.sugar, " g"), cell("Sodium", n.sodium, " mg", 0));
+}
+
+function verdictBox(item) {
+  const v = state.verdicts.get(item.id) || {};
+  const labels = LABELS[item.outcome];
+  const seg = h("div", { class: "seg", role: "group", "aria-label": "Verdict" });
+  for (const key of ["right", "wrong", "unsure"]) {
+    seg.append(h("button", {
+      type: "button", "data-v": key, "aria-pressed": String(v.verdict === key),
+      onclick: (e) => {
+        const cur = state.verdicts.get(item.id) || { note: "" };
+        const next = cur.verdict === key ? null : key;
+        if (next) state.verdicts.set(item.id, { ...cur, verdict: next, outcome: item.outcome, name: item.name });
+        else state.verdicts.delete(item.id);
+        for (const b of seg.children) b.setAttribute("aria-pressed", String(b.dataset.v === next));
+        updateCounts();
+      },
+    }, labels[key]));
+  }
+  const note = h("input", { type: "text", placeholder: "Note (why?)", value: v.note || "", "aria-label": `Note on ${item.name}`,
+    oninput: (e) => {
+      const cur = state.verdicts.get(item.id);
+      if (cur) cur.note = e.target.value;
+      else if (e.target.value) state.verdicts.set(item.id, { verdict: "unsure", note: e.target.value, outcome: item.outcome, name: item.name });
+      if (!cur && e.target.value) for (const b of seg.children) b.setAttribute("aria-pressed", String(b.dataset.v === "unsure"));
+      updateCounts();
+    } });
+  return h("div", { class: "verdict" }, seg, note);
+}
+
+function statusChip(id) {
+  const s = state.statuses.get(id);
+  if (!s) return null;
+  const [cls, label] = STATUS[s.status] || ["", s.status];
+  return h("span", { class: `chip ${cls}`, title: `Judged ${s.outcome}, now ${s.now}` }, label);
+}
+
+function card(item) {
+  const n = item.node, L = n.larder || {};
+  const mins = n.totalTimeInSeconds ? Math.round(n.totalTimeInSeconds / 60) : null;
+  const meta = [n.mealTags && n.mealTags.join(", "), mins && `${mins} min`, n.numberOfServings && `serves ${n.numberOfServings}`, item.id].filter(Boolean).join(" · ");
+  const chips = [];
+  if (L.fixture) chips.push(h("span", { class: "chip warn", title: "A hand-made test skeleton, not a real recipe" }, "fixture"));
+  for (const d of L.dietaryTags || []) chips.push(h("span", { class: "chip" }, pretty(d)));
+  for (const c of L.claims || []) chips.push(h("span", { class: "chip good" }, pretty(c)));
+  for (const a of L.allergens || []) chips.push(h("span", { class: "chip bad", title: "Contains" }, pretty(a)));
+  if ((L.incompleteNutrients || []).length) chips.push(h("span", { class: "chip warn", title: "Missing data: these values are lower bounds" }, `incomplete: ${L.incompleteNutrients.map((x) => UK[x] || x).join(", ")}`));
+  return h("article", { class: `card ${item.outcome}` },
+    h("div", { class: "top" },
+      h("div", {}, h("h3", {}, n.name || item.name), h("div", { class: "meta" }, meta)),
+      n.mainImage ? h("img", { src: n.mainImage, alt: "" }) : statusChip(item.id)),
+    n.mainImage ? statusChip(item.id) : null,
+    (L.excludedBy || []).length ? h("ul", { class: "reasons bad" }, L.excludedBy.map((r) => h("li", {}, r))) : null,
+    nutrition(n.nutrientsPerServing),
+    chips.length ? h("div", { class: "tags" }, chips) : null,
+    (L.notes || []).length ? h("ul", { class: "reasons" }, L.notes.map((r) => h("li", {}, r))) : null,
+    (L.rulesApplied || []).length ? h("div", { class: "meta" }, "Rules: ", L.rulesApplied.join(", ")) : null,
+    (n.ingredientLines || []).length ? h("details", {}, h("summary", {}, `Ingredients (${n.ingredientLines.length})`), h("ul", { class: "reasons" }, n.ingredientLines.map((l) => h("li", {}, l)))) : null,
+    (n.instructions || []).length ? h("details", {}, h("summary", {}, "Method"), h("ol", { class: "reasons" }, n.instructions.map((l) => h("li", {}, l)))) : null,
+    verdictBox(item));
+}
+
+function updateCounts() {
+  const el = $("#judged-count");
+  if (!el) return;
+  const n = state.verdicts.size + state.missing.length;
+  el.textContent = `${n} judged`;
+}
+
+function render(res, ms) {
+  const box = $("#results");
+  box.replaceChildren();
+  const errors = res.errors || [];
+  if (errors.length) box.append(h("div", { class: "banner bad" }, errors.map((e) => e.message).join(" · ")));
+  const returned = state.items.filter((i) => i.outcome === "returned");
+  const excluded = state.items.filter((i) => i.outcome === "excluded");
+  const conn = res.data && res.data.recipeSearch;
+  const packs = new Set();
+  (function walk(x) { if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === "object") { for (const [k, v] of Object.entries(x)) { if (k === "rulePack" && typeof v === "string") packs.add(v); else walk(v); } } })(res.data);
+  box.append(h("div", { class: "summary" },
+    h("strong", {}, `${returned.length} returned`),
+    conn && conn.totalCount !== undefined && conn.totalCount !== returned.length ? h("span", { class: "chip" }, `${conn.totalCount} match in total`) : null,
+    h("span", { class: excluded.length ? "chip bad" : "chip" }, `${excluded.length} excluded`),
+    [...packs].map((p) => h("span", { class: "chip mono" }, p)),
+    h("span", { class: "chip" }, `${ms} ms`),
+    h("span", { class: "chip", id: "judged-count" }, "")));
+  const libMsg = $("#libinfo").dataset.noImages;
+  if (libMsg && /hasImage:\s*true|"hasImage":\s*true/.test(state.last.query + JSON.stringify(state.last.variables))) box.append(h("div", { class: "banner warn" }, libMsg));
+
+  box.append(h("details", {}, h("summary", {}, "Show the query and variables sent"),
+    h("pre", {}, state.last.query), h("pre", {}, JSON.stringify(state.last.variables, null, 2)),
+    h("div", { class: "row", style: "margin-top:6px" }, h("button", { class: "btn small", type: "button", onclick: (e) => copy(`${state.last.query}\n\n# variables\n${JSON.stringify(state.last.variables, null, 2)}`, e.target) }, "Copy"))));
+
+  const section = (title, items, emptyText) => {
+    box.append(h("h3", { style: "margin-top:6px" }, title));
+    box.append(items.length ? h("div", { class: "cards" }, items.map(card)) : h("div", { class: "empty" }, emptyText));
+  };
+  section("Returned", returned, "Nothing came back for this query.");
+  if (excluded.length || (conn && "excluded" in conn)) section("Excluded by the rule pack", excluded, "Nothing was excluded.");
+
+  // judged earlier but not in these results (only when a saved case is open)
+  const shown = new Set(state.items.map((i) => i.id));
+  const gone = [...state.statuses.values()].filter((s) => s.outcome !== "missing" && !shown.has(s.recipe_id));
+  if (gone.length) {
+    box.append(h("h3", { style: "margin-top:6px" }, "Judged before, not in these results"));
+    box.append(h("ul", { class: "reasons" }, gone.map((s) => h("li", {}, `${s.name || s.recipe_id} (${s.recipe_id}): judged ${s.outcome} "${s.verdict}", now ${s.now} `, statusChip(s.recipe_id)))));
+  }
+
+  box.append(missingSection());
+  box.append(h("details", {}, h("summary", {}, "Raw response"), h("pre", {}, JSON.stringify(res, null, 2))));
+  updateCounts();
+}
+
+function missingSection() {
+  const wrap = h("div", { style: "display:grid;gap:8px" });
+  const draw = () => {
+    wrap.replaceChildren(h("h3", { style: "margin-top:6px" }, "Expected but missing"),
+      h("p", { class: "hint" }, "A recipe you think this query should have returned."));
+    if (state.missing.length) wrap.append(h("div", { class: "cards" }, state.missing.map((m, i) =>
+      h("article", { class: "card missing" },
+        h("div", { class: "top" }, h("div", {}, h("h3", {}, m.name), h("div", { class: "meta" }, m.recipe_id)), statusChip(m.recipe_id)),
+        h("input", { type: "text", value: m.note, placeholder: "Note (why should it be here?)", "aria-label": `Note on ${m.name}`, oninput: (e) => { m.note = e.target.value; } }),
+        h("div", { class: "row" }, h("button", { class: "btn small danger", type: "button", onclick: () => { state.missing.splice(i, 1); draw(); updateCounts(); } }, "Remove"))))));
+    const shown = new Set([...state.items.map((i) => i.id), ...state.missing.map((m) => m.recipe_id)]);
+    const candidates = (state.library || []).filter((r) => !shown.has(r.id));
+    if (state.library && !candidates.length) {
+      wrap.append(h("p", { class: "hint" }, "Every recipe in the library is already in these results. To say an excluded recipe should be allowed, use its card above."));
+      return;
+    }
+    const sel = h("select", { "aria-label": "Recipe that should have been returned" }, h("option", { value: "" }, state.library ? "Choose a recipe…" : "Loading recipes…"));
+    for (const r of candidates) sel.append(h("option", { value: r.id }, `${r.name} (${r.id})`));
+    wrap.append(h("div", { class: "row" }, sel, h("button", { class: "btn small", type: "button", onclick: () => {
+      const r = (state.library || []).find((x) => x.id === sel.value);
+      if (!r) return;
+      state.missing.push({ recipe_id: r.id, name: r.name, note: "" }); draw(); updateCounts();
+    } }, "Add")));
+  };
+  draw();
+  wrap.redraw = draw;
+  missingSection.current = wrap;
+  return wrap;
+}
+
+async function loadLibrary() {
+  if (state.library) return;
+  const q = `query($after: String) { recipeSearch(first: 100, after: $after) { pageInfo { hasNextPage endCursor } edges { node { id name } } excluded { id name } } }`;
+  const all = new Map();
+  try {
+    let after = null;
+    for (;;) {
+      const r = await gql(q, { after });
+      const c = r.data.recipeSearch;
+      for (const e of c.edges) all.set(localId(e.node.id), e.node.name);
+      for (const x of c.excluded) all.set(localId(x.id), x.name);
+      if (!c.pageInfo.hasNextPage) break;
+      after = c.pageInfo.endCursor;
+    }
+  } catch { return; }
+  state.library = [...all].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  if (missingSection.current) missingSection.current.redraw();
+}
+
+async function copy(text, btn) {
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+  catch { btn.textContent = "Copy failed: select the text above"; }
+  setTimeout(() => { btn.textContent = "Copy"; }, 1800);
+}
+
+// ---------- cases ----------
+async function refreshCases() {
+  const box = $("#cases");
+  if (!$("#apikey").value.trim()) { box.replaceChildren(h("div", { class: "empty" }, "Enter the API key at the top to see saved cases.")); return; }
+  let list;
+  try { list = await api("/cases"); } catch (err) { box.replaceChildren(h("div", { class: "empty" }, err.message)); return; }
+  if (!list.length) { box.replaceChildren(h("div", { class: "empty" }, "No saved cases yet. Run a query, judge the results, then save it as a case.")); return; }
+  box.replaceChildren(...list.map((c) => {
+    const out = h("div", { class: "row" });
+    let armed = false;
+    const del = h("button", { class: "btn small danger", type: "button", onclick: async () => {
+      if (!armed) { armed = true; del.textContent = "Confirm delete"; setTimeout(() => { armed = false; del.textContent = "Delete"; }, 3000); return; }
+      try { await api(`/cases/${c.id}`, { method: "DELETE" }); if (state.caseId === c.id) newCase(); refreshCases(); }
+      catch (err) { showBanner(err.message); }
+    } }, "Delete");
+    return h("div", { class: `case${state.caseId === c.id ? " loaded" : ""}` },
+      h("div", { class: "name" }, c.name),
+      h("div", { class: "meta" }, [c.reviewer || "no reviewer", `${c.judged} judged`, c.rule_pack, c.updated && c.updated.slice(0, 16).replace("T", " ")].filter(Boolean).join(" · ")),
+      h("div", { class: "row" },
+        h("button", { class: "btn small", type: "button", onclick: () => openCase(c.id) }, "Open"),
+        h("button", { class: "btn small", type: "button", onclick: async () => {
+          try { out.replaceChildren(...countChips((await api(`/cases/${c.id}/check`, { method: "POST" })))); }
+          catch (err) { out.replaceChildren(h("span", { class: "chip bad" }, err.message)); }
+        } }, "Check"), del),
+      out);
+  }));
+}
+
+function countChips(rep) {
+  if (rep.errors && rep.errors.length) return [h("span", { class: "chip bad" }, `Query error: ${rep.errors[0]}`)];
+  const c = rep.counts;
+  const chips = [];
+  if (c.holds) chips.push(h("span", { class: "chip good" }, `${c.holds} hold`));
+  if (c.regression) chips.push(h("span", { class: "chip bad" }, `${c.regression} regression`));
+  if (c.open) chips.push(h("span", { class: "chip warn" }, `${c.open} still wrong`));
+  if (c.fixed) chips.push(h("span", { class: "chip good" }, `${c.fixed} fixed`));
+  if (c.unsure) chips.push(h("span", { class: "chip" }, `${c.unsure} unsure`));
+  if (rep.rule_pack_then && rep.rule_pack_then !== rep.rule_pack_now) chips.push(h("span", { class: "chip warn" }, `judged on ${rep.rule_pack_then}`));
+  return chips.length ? chips : [h("span", { class: "chip" }, "no verdicts")];
+}
+
+async function openCase(id) {
+  let c, rep;
+  try { [c, rep] = await Promise.all([api(`/cases/${id}`), api(`/cases/${id}/check`, { method: "POST" })]); }
+  catch (err) { showBanner(err.message); return; }
+  state.caseId = id;
+  state.verdicts.clear(); state.missing = []; state.statuses.clear();
+  for (const j of c.judgements) {
+    if (j.outcome === "missing") state.missing.push({ recipe_id: j.recipe_id, name: j.name, note: j.note });
+    else state.verdicts.set(j.recipe_id, { verdict: j.verdict, note: j.note, outcome: j.outcome, name: j.name });
+  }
+  for (const r of rep.results || []) state.statuses.set(r.recipe_id, r);
+  $("#case-name").value = c.name; $("#case-note").value = c.note || "";
+  $("#gql").value = c.query; $("#vars").value = JSON.stringify(c.variables, null, 2);
+  selectTab("gql");
+  const lc = $("#loaded-case"); lc.hidden = false; lc.textContent = `Case: ${c.name}`;
+  await run(c.query, c.variables, { keepJudgements: true });
+  refreshCases();
+}
+
+function newCase() {
+  state.caseId = null; state.statuses.clear();
+  $("#case-name").value = ""; $("#case-note").value = "";
+  $("#loaded-case").hidden = true;
+  $("#save-out").textContent = "";
+  refreshCases();
+}
+$("#new-case").addEventListener("click", () => { newCase(); state.verdicts.clear(); state.missing = []; if (state.last) run(state.last.query, state.last.variables); });
+
+$("#save").addEventListener("click", async () => {
+  const name = $("#case-name").value.trim();
+  const out = $("#save-out");
+  if (!state.last) { out.textContent = "Run a query first."; return; }
+  if (!name) { out.textContent = "Give the case a name."; $("#case-name").focus(); return; }
+  let id = state.caseId;
+  if (!id) {
+    let existing = [];
+    try { existing = (await api("/cases")).map((c) => c.id); } catch { /* the save below reports the error */ }
+    id = slug(name);
+    for (let i = 2; existing.includes(id); i++) id = `${slug(name)}-${i}`;
+  }
+  const judgements = [
+    ...[...state.verdicts].map(([rid, v]) => ({ recipe_id: rid, name: v.name, outcome: v.outcome, verdict: v.verdict, note: v.note || "" })),
+    ...state.missing.map((m) => ({ recipe_id: m.recipe_id, name: m.name, outcome: "missing", verdict: "wrong", note: m.note || "" })),
+  ];
+  const body = { name, reviewer: $("#reviewer").value.trim(), query: state.last.query, variables: state.last.variables, judgements, note: $("#case-note").value };
+  try {
+    const saved = await api(`/cases/${id}`, { method: "PUT", body: JSON.stringify(body) });
+    state.caseId = saved.id;
+    out.textContent = `Saved as review/cases/${saved.id}.json with ${judgements.length} verdicts.`;
+    const lc = $("#loaded-case"); lc.hidden = false; lc.textContent = `Case: ${saved.name}`;
+    refreshCases();
+  } catch (err) { out.textContent = err.message; }
+});
+
+$("#check-all").addEventListener("click", async () => {
+  const out = $("#check-all-out");
+  out.hidden = false; out.textContent = "Checking…";
+  try {
+    const list = await api("/cases");
+    const reps = await Promise.all(list.map((c) => api(`/cases/${c.id}/check`, { method: "POST" })));
+    const sum = { holds: 0, regression: 0, open: 0, fixed: 0, unsure: 0 };
+    let errs = 0;
+    for (const r of reps) { if (r.errors.length) errs++; else for (const k in sum) sum[k] += r.counts[k]; }
+    const chips = countChips({ counts: sum, errors: [] });
+    if (errs) chips.push(h("span", { class: "chip bad" }, `${errs} with query errors`));
+    out.replaceChildren(h("span", {}, `${reps.length} cases: `), ...chips);
+  } catch (err) { out.textContent = err.message; }
+});
+
+// ---------- start ----------
+for (const [id, key] of [["#apikey", "larder.apikey"], ["#reviewer", "larder.reviewer"]]) {
+  const el = $(id); el.value = store.get(key) || "";
+  el.addEventListener("change", () => { store.set(key, el.value.trim()); if (id === "#apikey") { state.library = null; refreshCases(); } });
+}
+fetch("/health").then((r) => r.json()).then((hc) => {
+  $("#pack").textContent = `rule pack ${hc.rule_pack}`;
+  const li = $("#libinfo");
+  li.textContent = `${hc.recipes} recipes` + (hc.fixtures ? ` · ${hc.fixtures} fixtures` : "") + ` · ${hc.with_images} with images`;
+  if (hc.fixtures) li.classList.add("warn");
+  if (hc.with_images === 0) li.dataset.noImages = "No recipe in this library has an image yet, so anything with hasImage: true returns nothing.";
+}).catch(() => { $("#pack").textContent = "server not reachable"; });
+selectTab("form");
+refreshCases();
+</script>
+</body>
+</html>
