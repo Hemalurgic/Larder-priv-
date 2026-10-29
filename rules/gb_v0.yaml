@@ -1,0 +1,84 @@
+# GB rule pack v0.1, DRAFT. Not reviewed.
+# Drafted from memory of NHS pregnancy guidance. Every rule must be checked by the
+# dietitian against current NHS / FSA guidance before anything goes live; fill in
+# `source` and `reviewed_by` as part of that review.
+#
+# Precedence (lower number wins): 1 safety, 2 allergen, 3 diet, 4 target, 5 preference.
+# Rule types:
+#   exclude      - recipe never returned when the rule matches
+#   conditional  - `risk` = the risky pattern; `unless` = the exception that makes it OK.
+#                  risk matched and exception fails -> excluded; exception holds -> returned with pass_note
+#   limit        - returned, with a note the client must show / track
+# Match fields (all given fields must hold for an ingredient to match):
+#   any_tag:       ingredient has at least one of these catalogue tags
+#   state_not_in:  ingredient's cook state is NOT one of these (missing state counts as not in)
+#   lacks_tag:     ingredient does NOT have this tag
+#   state_in:      (risk/unless) ingredient's cook state IS one of these
+#   has_tag:       (unless) ingredient has this tag
+
+pack: GB
+version: "0.1"
+status: draft-unreviewed
+
+rules:
+  # ---------- 1. Life-stage safety: pregnancy ----------
+  - {id: preg-no-liver, priority: 1, when: {life_stage: pregnant}, type: exclude,
+     match: {any_tag: [offal_liver]}, reason: "Liver and liver products: high vitamin A", source: TODO, reviewed_by: null}
+  - {id: preg-no-pate, priority: 1, when: {life_stage: pregnant}, type: exclude,
+     match: {any_tag: [pate]}, reason: "All pate, including vegetable: listeria risk", source: TODO, reviewed_by: null}
+  - {id: preg-no-unpasteurised, priority: 1, when: {life_stage: pregnant}, type: exclude,
+     match: {any_tag: [unpasteurised]}, reason: "Unpasteurised milk and dairy", source: TODO, reviewed_by: null}
+  - {id: preg-soft-cheese-heated, priority: 1, when: {life_stage: pregnant}, type: conditional,
+     risk: {any_tag: [soft_mould_ripened_cheese, soft_blue_cheese]}, unless: {state_in: [heated_until_steaming]},
+     reason: "Mould-ripened or soft blue cheese only if heated until steaming hot",
+     pass_note: "Contains soft cheese; method heats it until steaming hot", source: TODO, reviewed_by: null}
+  - {id: preg-hen-egg-lion, priority: 1, when: {life_stage: pregnant}, type: conditional,
+     risk: {any_tag: [egg_hen], state_in: [raw, lightly_cooked]}, unless: {has_tag: lion_mark},
+     reason: "Raw or lightly cooked hen eggs only if British Lion",
+     pass_note: "Raw or runny egg: British Lion eggs required", source: TODO, reviewed_by: null}
+  - {id: preg-non-hen-egg-cooked, priority: 1, when: {life_stage: pregnant}, type: conditional,
+     risk: {any_tag: [egg_non_hen]}, unless: {state_in: [cooked_through]},
+     reason: "Non-hen eggs (duck, quail) must be fully cooked",
+     pass_note: "Non-hen eggs: must be fully cooked", source: TODO, reviewed_by: null}
+  - {id: preg-cured-meat-cooked, priority: 1, when: {life_stage: pregnant}, type: conditional,
+     risk: {any_tag: [cured_meat]}, unless: {state_in: [cooked_through, heated_until_steaming]},
+     reason: "Cold cured meats only if cooked",
+     pass_note: "Cured meat: cooked in this recipe", source: TODO, reviewed_by: null}
+  - {id: preg-meat-cooked, priority: 1, when: {life_stage: pregnant}, type: exclude,
+     match: {any_tag: [meat], state_not_in: [cooked_through, heated_until_steaming], lacks_tag: pate},
+     reason: "Meat must be cooked through", source: TODO, reviewed_by: null}
+  - {id: preg-high-mercury-fish, priority: 1, when: {life_stage: pregnant}, type: exclude,
+     match: {any_tag: [high_mercury_fish]}, reason: "Shark, swordfish, marlin: mercury", source: TODO, reviewed_by: null}
+  - {id: preg-shellfish-cooked, priority: 1, when: {life_stage: pregnant}, type: exclude,
+     match: {any_tag: [crustacean_shellfish, mollusc], state_not_in: [cooked_through]},
+     reason: "Shellfish must be cooked", source: TODO, reviewed_by: null}
+  - {id: preg-no-alcohol, priority: 1, when: {life_stage: pregnant}, type: exclude,
+     match: {any_tag: [alcohol]}, reason: "Alcohol, including cooked off (policy choice)", source: "Our policy", reviewed_by: null}
+  - {id: preg-tuna-limit, priority: 1, when: {life_stage: pregnant}, type: limit,
+     match: {any_tag: [tuna]}, reason: "Tuna: weekly limit applies", source: TODO, reviewed_by: null}
+  - {id: preg-oily-fish-limit, priority: 1, when: {life_stage: pregnant}, type: limit,
+     match: {any_tag: [oily_fish]}, reason: "Oily fish: weekly limit applies", source: TODO, reviewed_by: null}
+  - {id: preg-caffeine, priority: 1, when: {life_stage: pregnant}, type: limit,
+     match: {caffeine: true}, reason: "Contains caffeine: client tracks the daily limit", source: TODO, reviewed_by: null}
+
+  # ---------- 3. Diet ----------
+  - {id: veg-no-animal, priority: 3, when: {diet: [vegetarian, vegan]}, type: exclude,
+     match: {any_tag: [meat, fish, crustacean_shellfish, mollusc, gelatine, animal_rennet]},
+     reason: "Not vegetarian (includes hidden fish, shellfish paste, animal rennet)", source: "Definition", reviewed_by: null}
+  - {id: vegan-no-animal-products, priority: 3, when: {diet: [vegan]}, type: exclude,
+     match: {any_tag: [dairy, egg_hen, egg_non_hen, honey]},
+     reason: "Not vegan (dairy, egg, honey)", source: "Definition", reviewed_by: null}
+
+# Allergens (priority 2) are not rules in this file: every recipe's allergen set is the
+# union of its ingredients' catalogue allergens, and any overlap with the profile's
+# exclude_allergens excludes it. Results say "contains" or "no listed allergen
+# ingredients", never "safe for".
+
+# Nutrition claims, per 100 g of the finished recipe (raw-weight basis until retention
+# and yield factors are added). Thresholds as understood from the GB nutrition claims
+# rules; dietitian to confirm.
+claims:
+  reference_intakes: {iron_mg: 14, magnesium_mg: 375, folate_ug: 200}
+  source_of_pct: 15
+  high_in_pct: 30
+  protein_energy_pct: {source_of: 12, high_in: 20}

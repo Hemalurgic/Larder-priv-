@@ -1,0 +1,122 @@
+# Catalogue food -> CoFID 2021 food code.
+# Convention: recipe grams = edible weight as prepared BEFORE cooking, so most matches are raw entries.
+# match:  exact = same food | proxy = closest available, flagged in output | gap = not in CoFID
+# scale:  multiplier for made-up products (e.g. stock = 1 cube of 10 g per 500 ml water -> 0.02)
+# Every proxy and gap is a review item for the dietitian.
+
+ale:                          {code: "17-506", match: proxy, note: "bitter beer, per 100 ml treated as 100 g"}
+almonds:                      {code: "14-896", match: exact}
+anchovy:                      {code: "16-448", match: exact}
+arborio_rice:                 {code: "11-878", match: exact}
+banana:                       {code: "14-318", match: exact}
+basil:                        {code: "13-804", match: exact}
+beef_braising:                {code: "18-007", match: exact}
+beef_sirloin:                 {code: "18-065", match: exact}
+beef_stock:                   {code: "17-515", match: proxy, scale: 0.02, note: "beef stock cube, made up 10 g per 500 ml"}
+black_beans_tinned:           {code: "13-660", match: proxy, note: "red kidney beans, canned; no black beans in CoFID"}
+black_olives:                 {code: "14-340", match: proxy, note: "green olives in brine"}
+brie:                         {code: "12-344", match: exact}
+broccoli:                     {code: "13-502", match: exact}
+butter:                       {code: "17-685", match: exact}
+carrot:                       {code: "13-496", match: exact}
+cashews:                      {code: "14-811", match: exact}
+celery:                       {code: "13-636", match: exact}
+cherry_tomatoes:              {code: "13-519", match: exact}
+chia_seeds:                   {match: gap}
+chicken_breast:               {code: "18-290", match: proxy, note: "chicken light meat, raw"}
+chicken_liver_pate:           {code: "19-317", match: proxy, note: "liver pate, generic"}
+chicken_thigh:                {code: "18-289", match: proxy, note: "chicken dark meat, raw"}
+chilli_powder:                {code: "13-873", match: exact}
+chopped_tomatoes:             {code: "13-530", match: exact}
+cocoa_powder:                 {code: "12-545", match: exact}
+coconut_milk:                 {code: "14-889", match: exact}
+cornichons:                   {code: "13-246", match: proxy, note: "pickled gherkins"}
+courgette:                    {code: "13-627", match: exact}
+cranberry_sauce:              {match: gap}
+cucumber:                     {code: "13-523", match: exact}
+dark_chocolate_70:            {code: "17-491", match: proxy, note: "plain chocolate, not 70% specific"}
+dijon_mustard:                {code: "17-364", match: proxy, note: "smooth mustard"}
+dried_apricots:               {code: "14-031", match: exact}
+edamame:                      {code: "13-667", match: proxy, note: "frozen, boiled"}
+egg_noodles:                  {code: "11-719", match: exact}
+eggs_duck:                    {code: "12-920", match: exact}
+eggs_hen:                     {code: "12-937", match: exact}
+eggs_hen_lion:                {code: "12-937", match: exact}
+english_mustard:              {code: "17-364", match: proxy, note: "smooth mustard"}
+espresso:                     {code: "17-153", match: proxy, note: "strong coffee infusion"}
+feta_pasteurised:             {code: "12-525", match: exact}
+feta_unpasteurised:           {code: "12-525", match: exact}
+flatbread:                    {code: "11-974", match: proxy, note: "white pitta"}
+garlic:                       {code: "13-244", match: exact}
+ginger:                       {code: "13-890", match: exact}
+greek_yoghurt:                {code: "12-555", match: exact}
+green_beans:                  {code: "13-514", match: exact}
+ground_cumin:                 {code: "13-889", match: proxy, note: "cumin seeds"}
+honey:                        {code: "17-050", match: exact}
+hummus:                       {code: "13-556", match: exact}
+jasmine_rice:                 {code: "11-861", match: proxy, note: "white long grain rice, raw"}
+kale:                         {code: "13-234", match: exact}
+king_prawns:                  {code: "16-387", match: exact}
+kiwi:                         {code: "14-371", match: exact}
+lamb_mince:                   {code: "18-481", match: exact}
+lemon_juice:                  {code: "14-277", match: exact}
+lime_juice:                   {code: "14-279", match: exact}
+mature_cheddar:               {code: "12-346", match: exact}
+medjool_dates:                {code: "14-083", match: proxy, note: "raw dates"}
+mixed_berries:                {code: "14-375", match: proxy, note: "raspberries"}
+mozzarella:                   {code: "12-360", match: exact}
+mushrooms:                    {code: "13-505", match: exact}
+mustard_seeds:                {code: "13-839", match: exact}
+new_potatoes:                 {code: "13-618", match: exact}
+nutritional_yeast:            {match: gap}
+oat_drink:                    {match: gap}
+oats:                         {code: "11-788", match: exact}
+olive_oil:                    {code: "17-038", match: exact}
+onion:                        {code: "13-499", match: exact}
+pak_choi:                     {code: "13-516", match: proxy, note: "steamed"}
+parmesan:                     {code: "12-526", match: exact}
+parsley:                      {code: "13-844", match: exact}
+passata:                      {code: "13-530", match: proxy, note: "canned tomatoes"}
+peanut_butter:                {code: "14-892", match: exact}
+penne:                        {code: "11-716", match: exact}
+pizza_dough:                  {code: "11-1016", match: exact}
+plain_flour:                  {code: "11-886", match: exact}
+pumpkin_seeds:                {code: "14-842", match: exact}
+puy_lentils_cooked:           {code: "13-661", match: proxy, note: "green/brown lentils, boiled"}
+quinoa:                       {code: "14-843", match: exact}
+rapeseed_oil:                 {code: "17-041", match: exact}
+red_lentils:                  {code: "13-657", match: exact}
+red_onion:                    {code: "13-499", match: proxy, note: "onions, raw"}
+red_pepper:                   {code: "13-524", match: exact}
+red_wine_vinegar:             {code: "17-339", match: proxy, note: "vinegar, generic"}
+rice_vinegar:                 {code: "17-339", match: proxy, note: "vinegar, generic"}
+rocket:                       {code: "13-522", match: exact}
+romaine_lettuce:              {code: "13-520", match: proxy, note: "lettuce, average"}
+rye_bread:                    {code: "11-971", match: proxy, note: "brown bread; no rye loaf in CoFID"}
+salami:                       {code: "19-517", match: exact}
+salmon_fillet:                {code: "16-356", match: exact}
+sardines_tinned:              {code: "16-424", match: exact}
+seeded_crackers:              {code: "11-1134", match: proxy, note: "wholemeal crackers"}
+semi_skimmed_milk:            {code: "12-313", match: exact}
+sesame_oil:                   {code: "17-043", match: exact}
+smoked_paprika:               {code: "13-879", match: proxy, note: "paprika"}
+soba_noodles:                 {match: gap}
+sourdough_bread:              {code: "11-1145", match: proxy, note: "white bread, average"}
+soy_sauce:                    {code: "17-721", match: exact}
+spinach:                      {code: "13-572", match: exact}
+spring_onion:                 {code: "13-352", match: exact}
+sweet_potato:                 {code: "13-463", match: exact}
+swordfish:                    {code: "16-221", match: exact}
+tahini:                       {code: "14-847", match: exact}
+thai_green_curry_paste:       {code: "17-720", match: proxy, note: "curry paste, generic"}
+thai_green_curry_paste_vegan: {code: "17-720", match: proxy, note: "curry paste, generic"}
+tinned_chickpeas:             {code: "13-670", match: exact}
+tofu_firm:                    {code: "13-570", match: proxy, note: "tofu, steamed"}
+tomato:                       {code: "13-517", match: exact}
+tuna_steak:                   {code: "16-399", match: exact}
+turmeric:                     {code: "13-861", match: exact}
+vegetable_stock:              {code: "17-727", match: proxy, scale: 0.02, note: "vegetable stock cube, made up 10 g per 500 ml"}
+white_bread:                  {code: "11-1145", match: exact}
+white_wine:                   {code: "17-755", match: exact}
+wholemeal_bread:              {code: "11-981", match: exact}
+worcestershire_sauce:         {code: "17-723", match: exact}
