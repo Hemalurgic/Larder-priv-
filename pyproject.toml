@@ -1,0 +1,15 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[project]
+name = "recipe-poc"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2", "pyyaml", "jinja2", "openpyxl", "litellm", "pytest"]
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["schema", "engine", "evals", "generation"]

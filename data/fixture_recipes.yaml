@@ -1,0 +1,392 @@
+# FIXTURES: hand-made ingredient skeletons, one per brief, so the rules engine, golden
+# profiles and fault injection can run before any model generates real recipes.
+# They have no method steps and are NOT recipes for publication. Generated recipes
+# replace them in round 1. Grams = edible weight before cooking.
+
+- id: fx01
+  brief_id: 1
+  title: Spinach and chickpea shakshuka
+  meal: breakfast
+  servings: 2
+  total_minutes: 30
+  ingredients:
+    - {food: eggs_hen_lion, grams: 240, state: lightly_cooked, note: "4 eggs, runny yolks"}
+    - {food: tinned_chickpeas, grams: 240}
+    - {food: spinach, grams: 150}
+    - {food: chopped_tomatoes, grams: 400}
+    - {food: onion, grams: 100}
+    - {food: garlic, grams: 6}
+    - {food: olive_oil, grams: 15}
+    - {food: ground_cumin, grams: 3}
+- id: fx02
+  brief_id: 2
+  title: Overnight oats, dried apricot, pumpkin seeds
+  meal: breakfast
+  servings: 2
+  total_minutes: 10
+  ingredients:
+    - {food: oats, grams: 80}
+    - {food: oat_drink, grams: 250}
+    - {food: dried_apricots, grams: 40}
+    - {food: pumpkin_seeds, grams: 20}
+    - {food: chia_seeds, grams: 10}
+- id: fx03
+  brief_id: 3
+  title: Tofu and kale scramble on rye
+  meal: breakfast
+  servings: 2
+  total_minutes: 20
+  ingredients:
+    - {food: tofu_firm, grams: 300}
+    - {food: kale, grams: 100}
+    - {food: rye_bread, grams: 120}
+    - {food: olive_oil, grams: 10}
+    - {food: turmeric, grams: 2}
+    - {food: nutritional_yeast, grams: 10}
+- id: fx04
+  brief_id: 4
+  title: Spinach, kiwi and oat smoothie
+  meal: breakfast
+  servings: 2
+  total_minutes: 5
+  ingredients:
+    - {food: spinach, grams: 60}
+    - {food: kiwi, grams: 150}
+    - {food: oats, grams: 40}
+    - {food: banana, grams: 120}
+    - {food: oat_drink, grams: 300}
+- id: fx05
+  brief_id: 5
+  title: Mocha overnight oats with espresso
+  meal: breakfast
+  servings: 2
+  total_minutes: 10
+  ingredients:
+    - {food: oats, grams: 80}
+    - {food: semi_skimmed_milk, grams: 250}
+    - {food: espresso, grams: 60}
+    - {food: cocoa_powder, grams: 10}
+    - {food: greek_yoghurt, grams: 100}
+    - {food: honey, grams: 10}
+- id: fx06
+  brief_id: 6
+  title: Greek yoghurt, berries, pumpkin seeds
+  meal: breakfast
+  servings: 2
+  total_minutes: 5
+  ingredients:
+    - {food: greek_yoghurt, grams: 340}
+    - {food: mixed_berries, grams: 150}
+    - {food: pumpkin_seeds, grams: 20}
+    - {food: honey, grams: 10}
+- id: fx07
+  brief_id: 7
+  title: Peanut butter, banana and chia toast
+  meal: breakfast
+  servings: 2
+  total_minutes: 5
+  ingredients:
+    - {food: wholemeal_bread, grams: 120}
+    - {food: peanut_butter, grams: 40}
+    - {food: banana, grams: 120}
+    - {food: chia_seeds, grams: 10}
+- id: fx08
+  brief_id: 8
+  title: Soft-boiled duck eggs with soldiers
+  meal: breakfast
+  servings: 2
+  total_minutes: 15
+  ingredients:
+    - {food: eggs_duck, grams: 140, state: lightly_cooked, note: "2 eggs, runny yolks"}
+    - {food: white_bread, grams: 80}
+    - {food: butter, grams: 15}
+- id: fx09
+  brief_id: 9
+  title: Chicken liver pate on toast
+  meal: lunch
+  servings: 2
+  total_minutes: 10
+  ingredients:
+    - {food: chicken_liver_pate, grams: 120, state: as_is}
+    - {food: sourdough_bread, grams: 120}
+    - {food: cornichons, grams: 30}
+- id: fx10
+  brief_id: 10
+  title: Seared beef and lentil salad
+  meal: lunch
+  servings: 2
+  total_minutes: 25
+  ingredients:
+    - {food: beef_sirloin, grams: 250, state: cooked_through}
+    - {food: puy_lentils_cooked, grams: 250}
+    - {food: rocket, grams: 60}
+    - {food: red_onion, grams: 50}
+    - {food: olive_oil, grams: 20}
+    - {food: red_wine_vinegar, grams: 10}
+- id: fx11
+  brief_id: 11
+  title: Brie and cranberry toastie
+  meal: lunch
+  servings: 2
+  total_minutes: 15
+  ingredients:
+    - {food: brie, grams: 100, state: heated_until_steaming}
+    - {food: sourdough_bread, grams: 160}
+    - {food: cranberry_sauce, grams: 40}
+    - {food: butter, grams: 15}
+- id: fx12
+  brief_id: 12
+  title: Caesar salad, raw-yolk dressing
+  meal: lunch
+  servings: 2
+  total_minutes: 30
+  ingredients:
+    - {food: romaine_lettuce, grams: 200}
+    - {food: chicken_breast, grams: 250, state: cooked_through}
+    - {food: eggs_hen_lion, grams: 34, state: raw, note: "2 yolks, British Lion"}
+    - {food: anchovy, grams: 20, state: as_is}
+    - {food: parmesan, grams: 30}
+    - {food: sourdough_bread, grams: 80}
+    - {food: olive_oil, grams: 40}
+    - {food: lemon_juice, grams: 15}
+    - {food: dijon_mustard, grams: 5}
+- id: fx13
+  brief_id: 13
+  title: Edamame and soba noodle salad
+  meal: lunch
+  servings: 2
+  total_minutes: 20
+  ingredients:
+    - {food: soba_noodles, grams: 150}
+    - {food: edamame, grams: 150}
+    - {food: carrot, grams: 80}
+    - {food: spring_onion, grams: 30}
+    - {food: soy_sauce, grams: 20}
+    - {food: sesame_oil, grams: 10}
+    - {food: rice_vinegar, grams: 10}
+- id: fx14
+  brief_id: 14
+  title: Welsh rarebit
+  meal: lunch
+  servings: 2
+  total_minutes: 15
+  ingredients:
+    - {food: mature_cheddar, grams: 150}
+    - {food: wholemeal_bread, grams: 120}
+    - {food: worcestershire_sauce, grams: 10, state: cooked_through}
+    - {food: english_mustard, grams: 5}
+    - {food: semi_skimmed_milk, grams: 40}
+    - {food: butter, grams: 15}
+- id: fx15
+  brief_id: 15
+  title: Sardines on toast
+  meal: lunch
+  servings: 2
+  total_minutes: 10
+  ingredients:
+    - {food: sardines_tinned, grams: 120, state: cooked_through}
+    - {food: wholemeal_bread, grams: 120}
+    - {food: tomato, grams: 100}
+    - {food: lemon_juice, grams: 10}
+- id: fx16
+  brief_id: 16
+  title: Salami and rocket pizza
+  meal: lunch
+  servings: 2
+  total_minutes: 30
+  ingredients:
+    - {food: pizza_dough, grams: 250}
+    - {food: passata, grams: 100}
+    - {food: mozzarella, grams: 125}
+    - {food: salami, grams: 60, state: cooked_through, note: "baked on the pizza"}
+    - {food: rocket, grams: 30}
+- id: fx17
+  brief_id: 17
+  title: Tuna steak nicoise
+  meal: dinner
+  servings: 2
+  total_minutes: 30
+  ingredients:
+    - {food: tuna_steak, grams: 260, state: cooked_through}
+    - {food: eggs_hen_lion, grams: 120, state: cooked_through}
+    - {food: new_potatoes, grams: 300}
+    - {food: green_beans, grams: 150}
+    - {food: black_olives, grams: 40}
+    - {food: anchovy, grams: 15, state: as_is}
+    - {food: olive_oil, grams: 30}
+    - {food: dijon_mustard, grams: 5}
+- id: fx18
+  brief_id: 18
+  title: Swordfish skewers
+  meal: dinner
+  servings: 2
+  total_minutes: 25
+  ingredients:
+    - {food: swordfish, grams: 300, state: cooked_through}
+    - {food: red_pepper, grams: 150}
+    - {food: courgette, grams: 150}
+    - {food: olive_oil, grams: 20}
+    - {food: lemon_juice, grams: 15}
+- id: fx19
+  brief_id: 19
+  title: Mushroom risotto, white wine, parmesan
+  meal: dinner
+  servings: 2
+  total_minutes: 40
+  ingredients:
+    - {food: arborio_rice, grams: 160}
+    - {food: mushrooms, grams: 250}
+    - {food: white_wine, grams: 100}
+    - {food: parmesan, grams: 40}
+    - {food: vegetable_stock, grams: 800}
+    - {food: onion, grams: 100}
+    - {food: butter, grams: 20}
+    - {food: olive_oil, grams: 10}
+- id: fx20
+  brief_id: 20
+  title: Beef and ale stew
+  meal: dinner
+  servings: 4
+  total_minutes: 180
+  ingredients:
+    - {food: beef_braising, grams: 500, state: cooked_through}
+    - {food: ale, grams: 330}
+    - {food: carrot, grams: 200}
+    - {food: onion, grams: 150}
+    - {food: celery, grams: 100}
+    - {food: plain_flour, grams: 20}
+    - {food: beef_stock, grams: 400}
+- id: fx21
+  brief_id: 21
+  title: Black bean and sweet potato chilli
+  meal: dinner
+  servings: 4
+  total_minutes: 45
+  ingredients:
+    - {food: black_beans_tinned, grams: 480}
+    - {food: sweet_potato, grams: 400}
+    - {food: chopped_tomatoes, grams: 400}
+    - {food: onion, grams: 150}
+    - {food: red_pepper, grams: 150}
+    - {food: chilli_powder, grams: 5}
+    - {food: ground_cumin, grams: 5}
+    - {food: olive_oil, grams: 15}
+- id: fx22
+  brief_id: 22
+  title: Red lentil and spinach dal
+  meal: dinner
+  servings: 4
+  total_minutes: 35
+  ingredients:
+    - {food: red_lentils, grams: 200}
+    - {food: spinach, grams: 150}
+    - {food: chopped_tomatoes, grams: 200}
+    - {food: onion, grams: 150}
+    - {food: garlic, grams: 8}
+    - {food: ginger, grams: 10}
+    - {food: mustard_seeds, grams: 5}
+    - {food: turmeric, grams: 3}
+    - {food: rapeseed_oil, grams: 15}
+- id: fx23
+  brief_id: 23
+  title: Tofu and cashew green curry
+  meal: dinner
+  servings: 3
+  total_minutes: 30
+  ingredients:
+    - {food: tofu_firm, grams: 300}
+    - {food: cashews, grams: 50}
+    - {food: thai_green_curry_paste_vegan, grams: 50}
+    - {food: coconut_milk, grams: 400}
+    - {food: green_beans, grams: 150}
+    - {food: jasmine_rice, grams: 150}
+    - {food: lime_juice, grams: 10}
+- id: fx24
+  brief_id: 24
+  title: Lamb kofta with tahini
+  meal: dinner
+  servings: 3
+  total_minutes: 30
+  ingredients:
+    - {food: lamb_mince, grams: 400, state: cooked_through}
+    - {food: tahini, grams: 40}
+    - {food: greek_yoghurt, grams: 100}
+    - {food: flatbread, grams: 160}
+    - {food: onion, grams: 50}
+    - {food: ground_cumin, grams: 3}
+    - {food: parsley, grams: 10}
+- id: fx25
+  brief_id: 25
+  title: Salmon, quinoa and broccoli traybake
+  meal: dinner
+  servings: 2
+  total_minutes: 30
+  ingredients:
+    - {food: salmon_fillet, grams: 260, state: cooked_through}
+    - {food: quinoa, grams: 140}
+    - {food: broccoli, grams: 250}
+    - {food: olive_oil, grams: 15}
+    - {food: lemon_juice, grams: 15}
+- id: fx26
+  brief_id: 26
+  title: Prawn and pak choi stir-fry
+  meal: dinner
+  servings: 2
+  total_minutes: 20
+  ingredients:
+    - {food: king_prawns, grams: 240, state: cooked_through}
+    - {food: pak_choi, grams: 250}
+    - {food: egg_noodles, grams: 150, state: cooked_through}
+    - {food: soy_sauce, grams: 20}
+    - {food: sesame_oil, grams: 10}
+    - {food: garlic, grams: 6}
+    - {food: ginger, grams: 10}
+- id: fx27
+  brief_id: 27
+  title: Chicken and chickpea traybake
+  meal: dinner
+  servings: 4
+  total_minutes: 45
+  ingredients:
+    - {food: chicken_thigh, grams: 500, state: cooked_through}
+    - {food: tinned_chickpeas, grams: 240}
+    - {food: red_onion, grams: 150}
+    - {food: red_pepper, grams: 150}
+    - {food: smoked_paprika, grams: 5}
+    - {food: olive_oil, grams: 20}
+- id: fx28
+  brief_id: 28
+  title: Baked feta and tomato pasta
+  meal: dinner
+  servings: 3
+  total_minutes: 35
+  ingredients:
+    - {food: feta_pasteurised, grams: 200}
+    - {food: cherry_tomatoes, grams: 400}
+    - {food: penne, grams: 200}
+    - {food: olive_oil, grams: 20}
+    - {food: garlic, grams: 6}
+    - {food: basil, grams: 10}
+- id: fx29
+  brief_id: 29
+  title: Dark chocolate and almond energy bites
+  meal: snack
+  servings: 6
+  total_minutes: 15
+  ingredients:
+    - {food: dark_chocolate_70, grams: 40}
+    - {food: almonds, grams: 80}
+    - {food: medjool_dates, grams: 150}
+    - {food: cocoa_powder, grams: 10}
+- id: fx30
+  brief_id: 30
+  title: Hummus, crudites and seeded crackers
+  meal: snack
+  servings: 3
+  total_minutes: 10
+  ingredients:
+    - {food: hummus, grams: 200}
+    - {food: carrot, grams: 150}
+    - {food: cucumber, grams: 150}
+    - {food: celery, grams: 100}
+    - {food: seeded_crackers, grams: 80}

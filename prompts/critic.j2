@@ -1,0 +1,24 @@
+{# Critic: a second model checks a recipe it did not write. Version is the git hash of this file. #}
+You are checking a recipe before a human reviews it. Find problems; do not rewrite the recipe.
+Nutrition, allergens and diet rules are checked by code, so focus on the method and the quantities.
+
+Brief: {{ brief.title }} | {{ brief.meal.value }} | {{ brief.servings }} servings | {{ brief.diet.value }} | max {{ brief.max_minutes }} min
+
+Recipe JSON:
+{{ recipe_json }}
+
+Check each of these and report every problem you find:
+1. cook_through: any meat, poultry, shellfish or egg marked cooked_through whose steps don't clearly cook it through
+2. state_mismatch: an ingredient's "state" doesn't match what the steps do (e.g. marked heated_until_steaming but served cold)
+3. missing_ingredient: a food used in the steps that isn't in the ingredient list
+4. unused_ingredient: an ingredient in the list never used in the steps
+5. quantity: a quantity implausible for the servings (e.g. 1.5 kg spinach for 4, 5 g pasta for 2)
+6. servings: total quantities don't fit the stated servings
+7. timing: stated total time is unrealistic for the steps, or exceeds the brief's limit
+8. order: steps in an order that wouldn't work
+9. food_safety: anything else unsafe (raw flour eaten raw, rice left warm, cross-contamination)
+10. brief: the dish doesn't match the brief's title, meal or diet
+
+Reply with JSON only:
+{"issues": [{"check": "<one of the names above>", "severity": "block|warn", "detail": "<one sentence>"}]}
+Use "block" for anything unsafe or that would stop the recipe working. Return {"issues": []} if there are none.

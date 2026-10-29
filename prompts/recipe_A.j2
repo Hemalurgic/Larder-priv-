@@ -1,0 +1,11 @@
+{# Template A: minimal. Version is the git hash of this file. #}
+Write a recipe for: {{ brief.title }}.
+It is a {{ brief.meal.value }} for {{ brief.servings }} people, suitable for a {{ brief.diet.value }} diet{% if brief.focus %}, and should be a good source of {{ brief.focus | map(attribute='value') | join(' and ') }}{% endif %}. It must take no more than {{ brief.max_minutes }} minutes in total.
+
+Use only ingredients from this list (exact keys): {{ catalogue_keys | join(', ') }}.
+If you truly need something not on the list, put it in "unlisted_ingredients" instead.
+
+Reply with JSON only, in this shape:
+{"title": str, "meal": str, "servings": int, "total_minutes": int,
+ "ingredients": [{"food": key, "grams": number, "note": str|null, "state": str|null}],
+ "steps": [str], "unlisted_ingredients": [str]}

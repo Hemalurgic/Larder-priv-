@@ -1,0 +1,6 @@
+.env
+runs/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+data/cofid/cofid_2021_subset.json
