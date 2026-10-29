@@ -7,13 +7,40 @@ code runs on generated recipes.
 ## Run it
 
 ```
-pip install -e .                      # or: pip install pydantic pyyaml jinja2 openpyxl litellm pytest
-python -m pytest -q                   # 11 tests
+pip install -e .
+python -m pytest -q                   # 46 tests, incl. the client's queries against the API
 python -m evals.matrix_check          # pregnancy + diet outcome per recipe vs the matrix (30/30)
 python -m evals.run_golden            # 25 golden profiles (25/25)
 python -m evals.fault_injection       # 11/11 rules faults caught; 3 critic faults pending a model
-python -m evals.score_parser --parser keyword --show-failures   # routing test, no-AI baseline
+python -m evals.score_parser --parser keyword --show-failures   # routing test (parked), no-AI baseline
 ```
+
+## The API
+
+GraphQL, shaped to match the Suggestic queries the first client already sends, so they can switch
+without rewriting their integration.
+
+```
+LARDER_API_KEYS=dev uvicorn api.app:app --reload        # POST /graphql, GET /health
+LARDER_LIBRARY=runs/round1/recipes.jsonl ...             # serve a round's recipes instead of the fixtures
+```
+
+Send the key as `Authorization: Token <key>`. With no keys configured, every request is refused.
+
+- `recipeSearch`: `filter { should / must: [{ name, ingredients }] }`, `macroNutrientsRange`, `tags` (meal,
+  any case), `dietaryTag` (`VEGAN`, `VEGETARIAN`), `hasImage`, `hasInstructions`, `isPremium`, `first` (1-100),
+  `after`. Returns `edges { node }`, `pageInfo`, `totalCount`, `rulePack`.
+- `recipe(id)`: IDs are base64 `Recipe:<id>`, as Suggestic's are. Unknown or malformed recipes return null.
+- Larder additions, all optional: a `profile` argument on both (life stage, cycle phase, diet, focus, meal,
+  allergens, max minutes), and a `larder { ... }` block on each recipe with the rule IDs, notes, allergens,
+  dietary tags, claims and incomplete nutrients.
+- Every search result passes the rule pack for the profile, or for a general adult if none is sent. Recipes
+  that fail the structural checks are never served. An upper bound in `macroNutrientsRange` excludes recipes
+  whose value for that nutrient is incomplete, because missing data can only make it higher.
+
+Guesses to confirm against the client's integration: `mealTags` come back lower case; sodium is in mg;
+`instructions` is a list of strings; several `ingredients` terms in one clause must all match;
+`isPremium: true` returns nothing (Larder has no premium tier).
 
 With an OpenRouter key (`export OPENROUTER_API_KEY=...`); model picks and costs are in `config/test_models.yaml`:
 
@@ -45,9 +72,12 @@ Dry run of the whole recipe pipeline without keys: `--models fixture`.
 | `evals/` | Matrix check, golden profiles, fault injection, routing cases (150) + scorer |
 | `prompts/` | Recipe templates A and B, critic, parser |
 | `generation/` | LiteLLM model layer and the round runner (logs every call, cost and template version) |
+| `api/` | GraphQL service: `schema.py` (types, client-compatible), `library.py` (filters over engine.search), `app.py` (FastAPI, key stub) |
 
 ## Known limits (to fix before trusting the numbers)
 
+- **No recipe has an image yet**, and fixtures have no steps. The client's queries all send `hasImage: true`
+  and `hasInstructions: true`, so against the fixtures they return nothing until the image track has run.
 - **Rule pack is unreviewed.** Drafted from memory of NHS guidance; the dietitian must check every rule.
 - **Nutrition is raw-weight based.** No cooking retention factors (folate, vitamin C overstated) and
   per-100 g claims use raw weight unless a yield factor is given. Wet dishes rarely earn per-100 g claims.

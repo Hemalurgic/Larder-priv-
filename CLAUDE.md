@@ -29,6 +29,7 @@ python -m evals.run_golden                  # 25/25, blocks publishing on any fa
 python -m evals.fault_injection             # 11/11 rules faults caught
 python -m evals.score_parser --parser keyword --show-failures
 python -m generation.run_round --round 0 --half all --models fixture   # dry run, no keys
+LARDER_API_KEYS=dev uvicorn api.app:app --reload                         # GraphQL API on /graphql
 ```
 
 Model runs go through OpenRouter (`OPENROUTER_API_KEY`, LiteLLM prefix `openrouter/`).
@@ -37,27 +38,32 @@ Proposed models and costs: `config/test_models.yaml`. Confirm IDs on openrouter.
 ## Layout
 
 See README.md. Key files: `schema/models.py` (contracts), `engine/rules.py` (rules engine),
-`engine/nutrition.py` (CoFID 2021 maths), `evals/` (all tests), `prompts/` (templates; version = file hash).
+`engine/nutrition.py` (CoFID 2021 maths), `evals/` (all tests), `prompts/` (templates; version = file hash),
+`api/` (GraphQL service). `tests/test_api.py` holds the client's real Suggestic queries verbatim: keep them passing.
 
 ## Current state (29 Oct 2026)
 
 - Built and passing on 30 hand-made fixture recipes (ingredient skeletons, not real recipes).
+- GraphQL API answers the client's four Suggestic queries in the same shape (search by keyword + calorie cap,
+  browse by meal, one recipe, page through vegan IDs). None of their queries send a profile today; the
+  `profile` argument and `larder` block are what Larder adds.
+- Free text is not a requirement: the client sends structured filters only. Routing test and parser are parked.
 - Not yet run: any model call. Recipe round 1, critic, LLM routing test all need an OpenRouter key.
 - Known limits: README "Known limits" section (raw-weight nutrition, 5 CoFID gaps, 33 proxies,
   placeholder caffeine values, unreviewed rule pack, keyword baseline seen the test cases).
 
 ## Next steps, in order
 
-1. `git init`, push to a private GitHub repo, add `.env` (gitignored) with `OPENROUTER_API_KEY`.
-2. Confirm model IDs and prices; pin them in `config/test_models.yaml`.
-3. Routing test: each parser model with `--repeats 3`. Pass bar: 0 safety misses, 0 invented values.
-   Get 30 to 50 real user phrases from the client as an unseen extra set before trusting the scores.
-4. Recipe round 1: half A, 3 models x templates A and B, with the critic. Then matrix + golden on
+1. Add `OPENROUTER_API_KEY` (environment secret or gitignored `.env`). Confirm model IDs and prices; pin
+   them in `config/test_models.yaml`.
+2. Recipe round 1: half A, 3 models x templates A and B, with the critic. Then matrix + golden on
    `runs/round1/recipes.jsonl`, then blind human review via `runs/round1/review.csv`.
-5. Wrap the engine in a FastAPI service: `GET /v0/recipes/search`, `GET /v0/recipes/{id}`, API-key
-   auth stub, served from the fixture or round library, so the client can call something real.
+3. Image test, brought forward: every client query sends `hasImage: true`, so nothing is served without images.
+4. Confirm the guesses in README "The API" against the client's integration; serve a round library to them.
+5. Move the library to Postgres once it outgrows the in-memory load.
 6. Small review web app (keyboard shortcuts, timer) to replace the CSV once volumes grow.
-7. Image test (separate track) after recipe round 2. Plan is in the POC scope doc.
+
+Parked: routing test (`evals/score_parser.py`) and the free-text parser, until a client needs free text.
 
 ## Writing conventions
 

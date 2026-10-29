@@ -5,6 +5,7 @@
 # tags:      safety/diet vocabulary used by rules/gb_v0.yaml
 # caffeine_mg_per_100g: APPROXIMATE placeholder values, verify against a proper source
 # cofid_code: food code in CoFID, filled in once the dataset is loaded
+# name:      display name for ingredient lines (API only); defaults to the key with spaces
 #
 # Brand-dependent items (stocks, sauces, pastes, chocolate) carry a note. The recipe
 # spec must name a compliant product, and review checks it.
@@ -15,10 +16,10 @@ anchovy:                      {allergens: [fish], tags: [fish]}
 arborio_rice:                 {}
 banana:                       {}
 basil:                        {}
-beef_braising:                {tags: [meat, red_meat]}
-beef_sirloin:                 {tags: [meat, red_meat]}
+beef_braising:                {name: "braising beef", tags: [meat, red_meat]}
+beef_sirloin:                 {name: "sirloin steak", tags: [meat, red_meat]}
 beef_stock:                   {allergens: [celery], note: "brand-dependent; many contain celery"}
-black_beans_tinned:           {}
+black_beans_tinned:           {name: "tinned black beans"}
 black_olives:                 {}
 brie:                         {allergens: [milk], tags: [dairy, soft_mould_ripened_cheese]}
 broccoli:                     {tags: [vit_c_source]}
@@ -29,7 +30,7 @@ celery:                       {allergens: [celery]}
 cherry_tomatoes:              {tags: [vit_c_source]}
 chia_seeds:                   {}
 chicken_breast:               {tags: [meat, poultry]}
-chicken_liver_pate:           {tags: [meat, poultry, offal_liver, pate]}
+chicken_liver_pate:           {name: "chicken liver pâté", tags: [meat, poultry, offal_liver, pate]}
 chicken_thigh:                {tags: [meat, poultry]}
 chilli_powder:                {}
 chopped_tomatoes:             {}
@@ -39,18 +40,18 @@ cornichons:                   {}
 courgette:                    {}
 cranberry_sauce:              {}
 cucumber:                     {}
-dark_chocolate_70:            {caffeine_mg_per_100g: 80, note: "some brands contain milk; spec must say dairy-free for vegan"}
+dark_chocolate_70:            {name: "dark chocolate (70%)", caffeine_mg_per_100g: 80, note: "some brands contain milk; spec must say dairy-free for vegan"}
 dijon_mustard:                {allergens: [mustard]}
 dried_apricots:               {allergens: [sulphites]}
 edamame:                      {allergens: [soya]}
 egg_noodles:                  {allergens: [cereals_gluten, eggs], tags: [egg_hen]}
-eggs_duck:                    {allergens: [eggs], tags: [egg_non_hen]}
-eggs_hen:                     {allergens: [eggs], tags: [egg_hen]}
-eggs_hen_lion:                {allergens: [eggs], tags: [egg_hen, lion_mark]}
+eggs_duck:                    {name: "duck eggs", allergens: [eggs], tags: [egg_non_hen]}
+eggs_hen:                     {name: "eggs", allergens: [eggs], tags: [egg_hen]}
+eggs_hen_lion:                {name: "British Lion eggs", allergens: [eggs], tags: [egg_hen, lion_mark]}
 english_mustard:              {allergens: [mustard]}
 espresso:                     {caffeine_mg_per_100g: 212, tags: [tea_coffee]}
-feta_pasteurised:             {allergens: [milk], tags: [dairy]}
-feta_unpasteurised:           {allergens: [milk], tags: [dairy, unpasteurised]}
+feta_pasteurised:             {name: "feta (pasteurised)", allergens: [milk], tags: [dairy]}
+feta_unpasteurised:           {name: "feta (unpasteurised)", allergens: [milk], tags: [dairy, unpasteurised]}
 flatbread:                    {allergens: [cereals_gluten]}
 garlic:                       {}
 ginger:                       {}
@@ -63,7 +64,7 @@ jasmine_rice:                 {}
 kale:                         {tags: [vit_c_source]}
 king_prawns:                  {allergens: [crustaceans], tags: [crustacean_shellfish]}
 kiwi:                         {tags: [vit_c_source]}
-lamb_mince:                   {tags: [meat, red_meat]}
+lamb_mince:                   {name: "lamb mince", tags: [meat, red_meat]}
 lemon_juice:                  {tags: [vit_c_source]}
 lime_juice:                   {tags: [vit_c_source]}
 mature_cheddar:               {allergens: [milk], tags: [dairy], note: "spec must name a vegetarian-rennet cheddar"}
@@ -87,7 +88,7 @@ penne:                        {allergens: [cereals_gluten]}
 pizza_dough:                  {allergens: [cereals_gluten]}
 plain_flour:                  {allergens: [cereals_gluten]}
 pumpkin_seeds:                {}
-puy_lentils_cooked:           {}
+puy_lentils_cooked:           {name: "cooked Puy lentils"}
 quinoa:                       {}
 rapeseed_oil:                 {}
 red_lentils:                  {}
@@ -100,9 +101,9 @@ romaine_lettuce:              {}
 rye_bread:                    {allergens: [cereals_gluten]}
 salami:                       {tags: [meat, red_meat, cured_meat]}
 salmon_fillet:                {allergens: [fish], tags: [fish, oily_fish]}
-sardines_tinned:              {allergens: [fish], tags: [fish, oily_fish]}
+sardines_tinned:              {name: "tinned sardines", allergens: [fish], tags: [fish, oily_fish]}
 seeded_crackers:              {allergens: [cereals_gluten, sesame]}
-semi_skimmed_milk:            {allergens: [milk], tags: [dairy]}
+semi_skimmed_milk:            {name: "semi-skimmed milk", allergens: [milk], tags: [dairy]}
 sesame_oil:                   {allergens: [sesame]}
 smoked_paprika:               {}
 soba_noodles:                 {allergens: [cereals_gluten], note: "most soba contains wheat"}
@@ -113,10 +114,10 @@ spring_onion:                 {}
 sweet_potato:                 {}
 swordfish:                    {allergens: [fish], tags: [fish, high_mercury_fish]}
 tahini:                       {allergens: [sesame]}
-thai_green_curry_paste:       {allergens: [crustaceans], tags: [crustacean_shellfish], note: "standard pastes usually contain shrimp paste"}
-thai_green_curry_paste_vegan: {}
+thai_green_curry_paste:       {name: "Thai green curry paste", allergens: [crustaceans], tags: [crustacean_shellfish], note: "standard pastes usually contain shrimp paste"}
+thai_green_curry_paste_vegan: {name: "vegan Thai green curry paste"}
 tinned_chickpeas:             {}
-tofu_firm:                    {allergens: [soya]}
+tofu_firm:                    {name: "firm tofu", allergens: [soya]}
 tomato:                       {tags: [vit_c_source]}
 tuna_steak:                   {allergens: [fish], tags: [fish, tuna, oily_fish]}
 turmeric:                     {}

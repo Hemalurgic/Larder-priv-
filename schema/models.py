@@ -134,4 +134,5 @@ class Recipe(BaseModel):
     total_minutes: int = Field(ge=1, le=600)
     ingredients: list[RecipeIngredient] = Field(min_length=1)
     steps: list[str] = Field(default_factory=list)
+    image: Optional[str] = None    # URL of the main image, once the image track has made one
     fixture: bool = False          # True = hand-made test skeleton, not a real recipe
