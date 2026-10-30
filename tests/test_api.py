@@ -1,10 +1,11 @@
 """GraphQL API. Queries 1-4 are the first client's Suggestic queries, verbatim."""
 import json
+import os
 import warnings
 
 import pytest
 
-from api import library as lib
+from service import library as lib
 from engine.rules import evaluate
 from evals.common import load_library
 from evals.run_golden import golden
@@ -14,7 +15,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from fastapi.testclient import TestClient
 
-from api.app import app
+from service.app import app
 
 KEY = "test-key"
 
@@ -90,9 +91,25 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("LARDER_LIBRARY", str(path))
     monkeypatch.setenv("LARDER_API_KEYS", KEY)
     monkeypatch.setenv("LARDER_CASES", str(tmp_path / "cases"))
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("POSTGRES_URL", raising=False)
     lib.library.cache_clear()
     yield TestClient(app)
     lib.library.cache_clear()
+
+
+@pytest.fixture(params=["files", "postgres"])
+def case_client(request, client, monkeypatch):
+    """The client, with cases stored as files or in Postgres (set LARDER_TEST_DATABASE_URL to run that)."""
+    if request.param == "postgres":
+        url = os.environ.get("LARDER_TEST_DATABASE_URL")
+        if not url:
+            pytest.skip("set LARDER_TEST_DATABASE_URL to test the Postgres store")
+        import psycopg
+        with psycopg.connect(url, autocommit=True) as c:
+            c.execute("drop table if exists larder_cases")
+        monkeypatch.setenv("DATABASE_URL", url)
+    return client
 
 
 def gql(client, query, variables=None):
@@ -269,7 +286,8 @@ def call(client, method, path, body=None):
     return client.request(method, path, json=body, headers={"Authorization": f"Token {KEY}"})
 
 
-def test_cases_save_list_check_delete(client):
+def test_cases_save_list_check_delete(case_client, tmp_path):
+    client = case_client
     out = gql(client, PREG_Q, {"p": {"lifeStage": "PREGNANT"}})["data"]["recipeSearch"]
     kept = ids(out)[0]
     pate = pate_recipe().id
@@ -294,6 +312,11 @@ def test_cases_save_list_check_delete(client):
     from evals.judged_cases import run as run_cases
     assert run_cases() == 1
 
+    from service.cases import FileStore, export_cases
+    exported = tmp_path / "exported"
+    assert export_cases(exported) == ["preg-1"]
+    assert FileStore(exported).get("preg-1")["judgements"][4]["note"] == "test"
+
     assert call(client, "PUT", "/cases/Bad Id", case_body([])).status_code == 400
     assert call(client, "GET", "/cases/nope").status_code == 404
     assert call(client, "DELETE", "/cases/preg-1").status_code == 200
@@ -302,7 +325,7 @@ def test_cases_save_list_check_delete(client):
 
 
 def test_status_rules():
-    from api.cases import Judgement, status
+    from service.cases import Judgement, status
     J = lambda o, v: Judgement(recipe_id="x", outcome=o, verdict=v)
     assert status(J("returned", "right"), "returned") == "holds"
     assert status(J("returned", "right"), "absent") == "regression"
@@ -321,3 +344,28 @@ def test_testbench_page_and_health(client):
     assert r.status_code == 200 and "<title>Larder Test Bench</title>" in r.text
     h = client.get("/health").json()
     assert h["fixtures"] == 30 and h["with_images"] == 29
+
+
+def test_unwritable_case_store_says_what_to_do(client, tmp_path, monkeypatch):
+    blocker = tmp_path / "a-file"
+    blocker.write_text("")
+    monkeypatch.setenv("LARDER_CASES", str(blocker / "cases"))   # can't make a directory under a file
+    r = call(client, "PUT", "/cases/x", case_body([]))
+    assert r.status_code == 503 and "DATABASE_URL" in r.json()["detail"]
+
+
+def test_cofid_cache_matches_spreadsheet():
+    """The committed cache is what a deploy uses; it must match the spreadsheet it says it came from."""
+    from engine import cofid
+    assert cofid.SOURCE_HASH.read_text().strip() == cofid.xlsx_sha256()
+
+
+def test_cofid_uses_cache_without_spreadsheet(monkeypatch, tmp_path):
+    """A deploy leaves the xlsx out (.vercelignore); the committed cache must be used, not rebuilt."""
+    from engine import cofid
+    monkeypatch.setattr(cofid, "XLSX", tmp_path / "missing.xlsx")
+    cofid.load.cache_clear()
+    try:
+        assert len(cofid.load()) > 2000
+    finally:
+        cofid.load.cache_clear()

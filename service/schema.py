@@ -14,7 +14,7 @@ from typing import Annotated, Optional
 
 import strawberry
 
-from api import library as lib
+from service import library as lib
 from engine.rules import evaluate
 from schema.models import (Allergen, CyclePhase, Diet, Focus, LifeStage, Meal, Profile,
                            Region)

@@ -7,7 +7,7 @@ code runs on generated recipes.
 ## Run it
 
 ```
-pip install -e .
+pip install -e ".[generation,dev]"          # the service alone needs just: pip install -e .
 python -m pytest -q                   # 50 tests, incl. the client's queries against the API
 python -m evals.judged_cases --show   # re-check every verdict saved from the test bench
 python -m evals.matrix_check          # pregnancy + diet outcome per recipe vs the matrix (30/30)
@@ -22,7 +22,7 @@ GraphQL, shaped to match the Suggestic queries the first client already sends, s
 without rewriting their integration.
 
 ```
-LARDER_API_KEYS=dev uvicorn api.app:app --reload        # POST /graphql, GET /health
+LARDER_API_KEYS=dev uvicorn service.app:app --reload        # POST /graphql, GET /health
 LARDER_LIBRARY=runs/round1/recipes.jsonl ...             # serve a round's recipes instead of the fixtures
 ```
 
@@ -44,7 +44,7 @@ Send the key as `Authorization: Token <key>`. With no keys configured, every req
 A page for testing the API by hand and recording verdicts, at `/testbench` on the running server:
 
 ```
-LARDER_API_KEYS=pick-a-key uvicorn api.app:app      # then open http://localhost:8000/testbench
+LARDER_API_KEYS=pick-a-key uvicorn service.app:app      # then open http://localhost:8000/testbench
 ```
 
 Enter the API key and your name at the top. Then:
@@ -61,6 +61,24 @@ Enter the API key and your name at the top. Then:
 `python -m evals.judged_cases --show` runs the same check from the command line and fails on any regression,
 so a reviewer's verdicts become tests. The excluded list comes from a Larder addition to the API:
 `recipeSearch { excluded { ... } }`.
+
+## Deploying (Vercel)
+
+The root `app.py` exposes the FastAPI app, which is where Vercel looks for one. A deploy installs only the
+base dependencies (about 67 MB); model runs and the CoFID rebuild need the `generation` extra and stay local.
+
+1. In Vercel: **Add New → Project**, import `Studio-Daedalus/Larder`. Leave the build settings as detected.
+2. **Settings → Environment Variables**: `LARDER_API_KEYS` = one or more keys, comma-separated.
+3. **Storage**: connect a Postgres database (e.g. Neon). It sets `DATABASE_URL`, and saved cases go there,
+   because a serverless disk doesn't keep files. Without a database the test bench works but can't save.
+4. Deploy. Every branch gets a preview URL; `main` is production. `/testbench` is the test bench,
+   `/graphql` the API, `/health` a quick check.
+
+Preview URLs sit behind Vercel's login by default (Deployment Protection). Anyone testing a preview needs
+access to the Vercel team, or protection turned off for previews; the API key still guards the data.
+
+To commit cases reviewers saved on the hosted bench: `DATABASE_URL=<from Vercel> python -m service.cases export`
+writes them to `review/cases/`.
 
 Guesses to confirm against the client's integration: `mealTags` come back lower case; sodium is in mg;
 `instructions` is a list of strings; several `ingredients` terms in one clause must all match;
@@ -96,8 +114,9 @@ Dry run of the whole recipe pipeline without keys: `--models fixture`.
 | `evals/` | Matrix check, golden profiles, fault injection, routing cases (150) + scorer |
 | `prompts/` | Recipe templates A and B, critic, parser |
 | `generation/` | LiteLLM model layer and the round runner (logs every call, cost and template version) |
-| `api/` | GraphQL service: `schema.py` (types, client-compatible), `library.py` (filters over engine.search), `cases.py` (judged cases), `app.py` (FastAPI, key stub), `static/testbench.html` |
+| `service/` | GraphQL service: `schema.py` (types, client-compatible), `library.py` (filters over engine.search), `cases.py` (judged cases), `app.py` (FastAPI, key stub), `static/testbench.html` |
 | `review/cases/` | Judged cases saved from the test bench; re-checked by `evals/judged_cases.py` |
+| `app.py` | Entry point for Vercel and `uvicorn app:app` |
 
 ## Known limits (to fix before trusting the numbers)
 

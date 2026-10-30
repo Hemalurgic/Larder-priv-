@@ -1,6 +1,6 @@
 """FastAPI app serving the GraphQL API, judged cases and the test bench page (/testbench).
 
-    LARDER_API_KEYS=key1,key2 uvicorn api.app:app --reload
+    LARDER_API_KEYS=key1,key2 uvicorn service.app:app --reload
 
 Auth is a stub: keys come from LARDER_API_KEYS and are sent as `Authorization: Token <key>`
 (or `Bearer <key>`, or `X-Api-Key: <key>`). With no keys configured every request is refused.
@@ -15,9 +15,9 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from strawberry.fastapi import GraphQLRouter
 
-from api.cases import router as cases_router
-from api.library import library, rule_pack
-from api.schema import schema
+from service.cases import router as cases_router
+from service.library import library, rule_pack
+from service.schema import schema
 
 STATIC = Path(__file__).resolve().parent / "static"
 

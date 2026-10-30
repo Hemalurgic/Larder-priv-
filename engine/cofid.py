@@ -7,12 +7,15 @@ data from row 4. Values are per 100 g edible portion (per 100 ml for alcoholic d
 """
 from __future__ import annotations
 
+import hashlib
 import json
+from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 XLSX = ROOT / "data" / "cofid" / "cofid_2021.xlsx"
-CACHE = ROOT / "data" / "cofid" / "cofid_2021_subset.json"
+CACHE = ROOT / "data" / "cofid" / "cofid_2021_subset.json"   # committed, so a deploy never needs the xlsx
+SOURCE_HASH = CACHE.with_suffix(".sha256")                    # sha256 of the xlsx the cache was built from
 
 # Nutrient code -> our field name
 NUTRIENTS = {
@@ -59,11 +62,19 @@ def build_cache() -> dict:
             for i, name in idx.items():
                 f[name] = _val(r[i])
     CACHE.write_text(json.dumps(foods, indent=0, ensure_ascii=False))
+    SOURCE_HASH.write_text(xlsx_sha256() + "\n")
     return foods
 
 
+def xlsx_sha256() -> str:
+    return hashlib.sha256(XLSX.read_bytes()).hexdigest()
+
+
+@lru_cache
 def load() -> dict:
-    if CACHE.exists() and CACHE.stat().st_mtime >= XLSX.stat().st_mtime:
+    """The cached subset, rebuilt only when the spreadsheet's contents have changed."""
+    fresh = SOURCE_HASH.exists() and (not XLSX.exists() or SOURCE_HASH.read_text().strip() == xlsx_sha256())
+    if CACHE.exists() and fresh:
         return json.loads(CACHE.read_text())
     return build_cache()
 

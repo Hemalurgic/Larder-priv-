@@ -2,7 +2,9 @@
 
 A case is a GraphQL query plus a reviewer's verdict on each recipe it returned or excluded, and any
 recipe they expected but didn't get. Cases are JSON files in review/cases/ (LARDER_CASES overrides),
-so they can be committed. `python -m evals.judged_cases` re-runs every case and reports regressions.
+so they can be committed, or in Postgres when DATABASE_URL is set (hosted, where the disk doesn't
+persist). `python -m service.cases export` copies hosted cases into review/cases/ to commit.
+`python -m evals.judged_cases` re-runs every case and reports regressions.
 """
 from __future__ import annotations
 
@@ -16,8 +18,8 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from api import library as lib
-from api.schema import schema
+from service import library as lib
+from service.schema import schema
 
 ROOT = Path(__file__).resolve().parents[1]
 CASE_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
@@ -48,35 +50,117 @@ def cases_dir() -> Path:
     return Path(os.environ.get("LARDER_CASES") or ROOT / "review" / "cases")
 
 
-def _path(case_id: str) -> Path:
+def database_url() -> str | None:
+    """Postgres when one is connected (Vercel's Neon integration sets DATABASE_URL); files otherwise."""
+    return os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or None
+
+
+class FileStore:
+    """One JSON file per case, for local use: the files are what gets committed."""
+
+    def __init__(self, root: Path):
+        self.root = root
+
+    def get(self, case_id: str) -> dict | None:
+        p = self.root / f"{case_id}.json"
+        return json.loads(p.read_text()) if p.exists() else None
+
+    def all(self) -> list[dict]:
+        return [json.loads(p.read_text()) for p in sorted(self.root.glob("*.json"))] if self.root.exists() else []
+
+    def put(self, case_id: str, body: dict) -> None:
+        p = self.root / f"{case_id}.json"
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            tmp = p.with_suffix(".tmp")
+            tmp.write_text(json.dumps(body, indent=2, ensure_ascii=False) + "\n")
+            tmp.replace(p)
+        except OSError:
+            raise HTTPException(503, "This server can't save cases to disk. Connect a Postgres database "
+                                     "and set DATABASE_URL.") from None
+
+    def delete(self, case_id: str) -> bool:
+        p = self.root / f"{case_id}.json"
+        if not p.exists():
+            return False
+        p.unlink()
+        return True
+
+
+class PgStore:
+    """A single table of case documents, for hosted use where the disk doesn't persist."""
+
+    def __init__(self, url: str):
+        self.url = url
+
+    def _conn(self):
+        import psycopg
+
+        conn = psycopg.connect(self.url, autocommit=True)
+        conn.execute("create table if not exists larder_cases (id text primary key, body jsonb not null)")
+        return conn
+
+    def get(self, case_id: str) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("select body from larder_cases where id = %s", (case_id,)).fetchone()
+        return row[0] if row else None
+
+    def all(self) -> list[dict]:
+        with self._conn() as c:
+            return [r[0] for r in c.execute("select body from larder_cases order by id")]
+
+    def put(self, case_id: str, body: dict) -> None:
+        from psycopg.types.json import Jsonb
+
+        with self._conn() as c:
+            c.execute("insert into larder_cases (id, body) values (%s, %s) "
+                      "on conflict (id) do update set body = excluded.body", (case_id, Jsonb(body)))
+
+    def delete(self, case_id: str) -> bool:
+        with self._conn() as c:
+            return c.execute("delete from larder_cases where id = %s", (case_id,)).rowcount > 0
+
+
+def store() -> FileStore | PgStore:
+    url = database_url()
+    return PgStore(url) if url else FileStore(cases_dir())
+
+
+def _check_id(case_id: str) -> str:
     if not CASE_ID.match(case_id):
         raise HTTPException(400, "Case IDs use lower-case letters, digits and hyphens (up to 64).")
-    return cases_dir() / f"{case_id}.json"
+    return case_id
 
 
 def load_case(case_id: str) -> Case:
-    p = _path(case_id)
-    if not p.exists():
+    body = store().get(_check_id(case_id))
+    if body is None:
         raise HTTPException(404, f"No case '{case_id}'.")
-    return Case(**json.loads(p.read_text()))
+    return Case(**body)
 
 
 def all_cases() -> list[Case]:
-    d = cases_dir()
-    return [Case(**json.loads(p.read_text())) for p in sorted(d.glob("*.json"))] if d.exists() else []
+    return [Case(**b) for b in store().all()]
 
 
 def save_case(case_id: str, case: Case) -> Case:
-    p = _path(case_id)
+    s = store()
+    old = s.get(_check_id(case_id))
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    old = load_case(case_id) if p.exists() else None
     case = case.model_copy(update={"id": case_id, "rule_pack": lib.rule_pack(), "updated": now,
-                                   "created": old.created if old else now})
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(".tmp")
-    tmp.write_text(json.dumps(case.model_dump(), indent=2, ensure_ascii=False) + "\n")
-    tmp.replace(p)
+                                   "created": old["created"] if old else now})
+    s.put(case_id, case.model_dump())
     return case
+
+
+def export_cases(to: Path) -> list[str]:
+    """Copy every case from the current store (e.g. the hosted database) into JSON files to commit."""
+    files = FileStore(to)
+    out = []
+    for case in all_cases():
+        files.put(case.id, case.model_dump())
+        out.append(case.id)
+    return out
 
 
 # ---------- Checking a case against the current engine ----------
@@ -157,13 +241,24 @@ def put_case(case_id: str, case: Case) -> Case:
 
 @router.delete("/{case_id}")
 def delete_case(case_id: str) -> dict:
-    p = _path(case_id)
-    if not p.exists():
+    if not store().delete(_check_id(case_id)):
         raise HTTPException(404, f"No case '{case_id}'.")
-    p.unlink()
     return {"deleted": case_id}
 
 
 @router.post("/{case_id}/check")
 def check_case(case_id: str) -> dict:
     return check(load_case(case_id))
+
+
+if __name__ == "__main__":
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Export judged cases from the database to JSON files.")
+    ap.add_argument("command", choices=["export"])
+    ap.add_argument("--to", default=str(ROOT / "review" / "cases"))
+    a = ap.parse_args()
+    if not database_url():
+        raise SystemExit("Set DATABASE_URL to the hosted database first (Vercel: Storage > your database > .env).")
+    ids = export_cases(Path(a.to))
+    print(f"Exported {len(ids)} cases to {a.to}")

@@ -22,7 +22,7 @@ There are no end users of our own. Anything about "what users see" means the cli
 ## Commands
 
 ```
-pip install -e .
+pip install -e ".[generation,dev]"
 python -m pytest -q                         # must stay green
 python -m evals.matrix_check                # 30/30
 python -m evals.run_golden                  # 25/25, blocks publishing on any failure
@@ -30,7 +30,7 @@ python -m evals.fault_injection             # 11/11 rules faults caught
 python -m evals.score_parser --parser keyword --show-failures
 python -m generation.run_round --round 0 --half all --models fixture   # dry run, no keys
 python -m evals.judged_cases --show                                      # re-check saved verdicts
-LARDER_API_KEYS=dev uvicorn api.app:app --reload                         # /graphql and /testbench
+LARDER_API_KEYS=dev uvicorn service.app:app --reload                         # /graphql and /testbench
 ```
 
 Model runs go through OpenRouter (`OPENROUTER_API_KEY`, LiteLLM prefix `openrouter/`).
@@ -40,7 +40,7 @@ Proposed models and costs: `config/test_models.yaml`. Confirm IDs on openrouter.
 
 See README.md. Key files: `schema/models.py` (contracts), `engine/rules.py` (rules engine),
 `engine/nutrition.py` (CoFID 2021 maths), `evals/` (all tests), `prompts/` (templates; version = file hash),
-`api/` (GraphQL service, test bench at `/testbench`). `tests/test_api.py` holds the client's real Suggestic queries
+`service/` (GraphQL service, test bench at `/testbench`; not `api/`, which Vercel reserves), `app.py` (deploy entry point). `tests/test_api.py` holds the client's real Suggestic queries
 verbatim: keep them passing. `review/cases/` holds reviewers' judged cases: a regression there needs the same
 dietitian sign-off as the rule change that caused it.
 
@@ -52,6 +52,8 @@ dietitian sign-off as the rule change that caused it.
   `profile` argument and `larder` block are what Larder adds.
 - Test bench (`/testbench`): profile search or raw GraphQL, verdicts on every returned and excluded recipe,
   saved as cases in `review/cases/` and re-checked by `evals.judged_cases`.
+- Deployable to Vercel (README "Deploying"): base install only, committed CoFID cache, cases in Postgres via
+  `DATABASE_URL`. Keep the service free of `generation` extras (litellm, openpyxl, jinja2).
 - Free text is not a requirement: the client sends structured filters only. Routing test and parser are parked.
 - Not yet run: any model call. Recipe round 1, critic, LLM routing test all need an OpenRouter key.
 - Known limits: README "Known limits" section (raw-weight nutrition, 5 CoFID gaps, 33 proxies,

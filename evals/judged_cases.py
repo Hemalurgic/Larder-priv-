@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from api.cases import all_cases, check
+from service.cases import all_cases, check
 
 
 def run(show: bool = False) -> int:

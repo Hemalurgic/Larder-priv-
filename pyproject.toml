@@ -5,15 +5,20 @@ pythonpath = ["."]
 name = "recipe-poc"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2", "pyyaml", "jinja2", "openpyxl", "litellm", "pytest",
-                "strawberry-graphql[fastapi]>=0.338", "fastapi", "uvicorn", "httpx"]
+# What the deployed service needs; kept small for serverless hosting.
+dependencies = ["pydantic>=2", "pyyaml", "fastapi", "strawberry-graphql[fastapi]>=0.338",
+                "psycopg[binary]>=3.2"]
+
+[project.optional-dependencies]
+generation = ["jinja2", "litellm", "openpyxl"]     # model runs and rebuilding the CoFID cache
+dev = ["pytest", "httpx", "uvicorn"]
 
 [build-system]
 requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["schema", "engine", "evals", "generation", "api"]
+packages = ["schema", "engine", "evals", "generation", "service"]
 
 [tool.setuptools.package-data]
-api = ["static/*"]
+service = ["static/*"]

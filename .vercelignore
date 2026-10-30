@@ -1,0 +1,4 @@
+# Not needed by the deployed service. The CoFID cache (cofid_2021_subset.json) is used instead of the xlsx.
+data/cofid/cofid_2021.xlsx
+runs/
+.env
